@@ -5,5 +5,11 @@
 - [x] Tạo minh họa riêng cho các cây đột biến và các khung cảnh ký ức trọng tâm.
 - [x] Xây dựng giao diện hành trình năm khu vực, các puzzle ngắn và phản hồi trực quan–âm thanh.
 - [x] Tích hợp thư viện cây đột biến cùng hoạt ảnh phát triển, phát sáng và phản hồi thời tiết.
-- [ ] Kiểm thử hồi phục dữ liệu sau tải lại trang, desktop/tablet/mobile và build production.
-- [ ] Đồng bộ mã nguồn, lưu checkpoint và cập nhật GitHub.
+- [x] Kiểm thử hồi phục dữ liệu sau tải lại trang, desktop/tablet/mobile và build production.
+- [x] Đồng bộ mã nguồn, lưu checkpoint và cập nhật GitHub.
+- [x] Xác định schema sao lưu JSON, kiểm tra tương thích phiên bản và trải nghiệm khôi phục dữ liệu an toàn.
+- [x] Thiết kế năm phần thưởng trang trí, điều kiện mở khóa và vị trí xuất hiện trong khu vườn.
+- [x] Viết lời dẫn ngắn cho Ong và năm căn phòng ký ức, đồng thời tạo hiệu ứng âm thanh ngữ cảnh.
+- [x] Xây dựng giao diện xuất–nhập tệp, tủ trưng bày phần thưởng và các điều khiển âm thanh.
+- [x] Kiểm thử tệp lỗi, tệp hợp lệ, thao tác tải lại trang, responsive và build production.
+- [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.

@@ -27,6 +27,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import MemoryAtlas from "@/components/MemoryAtlas";
 import MutationGallery from "@/components/MutationGallery";
+import ProgressArchive from "@/components/ProgressArchive";
+import { GardenDecorations, MemoryRewards } from "@/components/MemoryRewards";
 import {
   createMemoryProgress,
   loadGardenProgress,
@@ -35,6 +37,7 @@ import {
   type GardenPlot,
   type GardenProgressSnapshot,
   type MemoryProgress,
+  type RegionKey,
   type TimeOfDay,
   type Weather,
 } from "@/lib/garden-progress";
@@ -56,6 +59,15 @@ const ASSETS = {
   memoryMap: "/manus-storage/bee-garden-memory-map_12eb8907.jpg",
   butterfly: "/manus-storage/bee-garden-butterfly_e49f3bac.jpg",
   logo: "/manus-storage/bee-garden-logo_ac8c5c49.png",
+};
+
+const NARRATIONS: Record<"intro" | RegionKey, string> = {
+  intro: "/manus-storage/ong-garden-intro_816a1f21.wav",
+  porch: "/manus-storage/ong-memory-porch_79a6b8d9.wav",
+  seed: "/manus-storage/ong-memory-seed_c97014c1.wav",
+  lake: "/manus-storage/ong-memory-pond_5685f11b.wav",
+  hive: "/manus-storage/ong-memory-hive_7fcb5af4.wav",
+  room: "/manus-storage/ong-memory-room_d65dfa19.wav",
 };
 
 const INITIAL_PLOTS: GardenPlot[] = [
@@ -101,6 +113,7 @@ export default function Home() {
   const [doorPanelOpen, setDoorPanelOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const audioRef = useRef<AudioNodes | null>(null);
+  const narrationRef = useRef<HTMLAudioElement | null>(null);
 
   const selected = plots.find((plot) => plot.id === selectedPlot) ?? plots[0];
   const environment = environmentLabel(time, weather);
@@ -108,13 +121,27 @@ export default function Home() {
   const fragmentCount = useMemo(() => Object.values(memoryProgress).reduce((total, region) => total + region.fragments.length, 0), [memoryProgress]);
   const filledSlots = useMemo(
     () => [
-      { icon: "✦", label: "Hạt Tulip", amount: seeds, tone: "seed" },
-      { icon: "◉", label: "Mật Ong", amount: honey, tone: "honey" },
+      { icon: "✦", label: "Phong bì Tulip", amount: seeds, tone: "seed" },
+      { icon: "◉", label: "Giọt mật", amount: honey, tone: "honey" },
       { icon: "⌁", label: "Phấn hoa", amount: 2, tone: "pollen" },
-      { icon: "◇", label: "Mảnh ký ức", amount: fragmentCount, tone: "memory" },
+      { icon: "◇", label: "Mảnh đã ghi", amount: fragmentCount, tone: "memory" },
     ],
     [fragmentCount, honey, seeds],
   );
+  const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
+    version: 3,
+    updatedAt: new Date().toISOString(),
+    time,
+    weather,
+    plots,
+    selectedPlot,
+    water,
+    seeds,
+    honey,
+    beeBond,
+    butterflySeen,
+    memory: memoryProgress,
+  }), [beeBond, butterflySeen, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -154,6 +181,11 @@ export default function Home() {
 
   function stopAudio() {
     const nodes = audioRef.current;
+    if (narrationRef.current) {
+      narrationRef.current.pause();
+      narrationRef.current.currentTime = 0;
+      narrationRef.current = null;
+    }
     if (!nodes) return;
     nodes.master.gain.exponentialRampToValueAtTime(0.0001, nodes.context.currentTime + 0.18);
     window.setTimeout(() => {
@@ -181,6 +213,39 @@ export default function Home() {
     oscillator.stop(now + 0.24);
   }
 
+  function playRoomEffect(region: RegionKey) {
+    const nodes = audioRef.current;
+    if (!nodes) return;
+    const tones: Record<RegionKey, [number, number]> = { porch: [620, 760], seed: [410, 560], lake: [290, 430], hive: [120, 160], room: [740, 980] };
+    const [from, to] = tones[region];
+    const oscillator = nodes.context.createOscillator();
+    const gain = nodes.context.createGain();
+    const now = nodes.context.currentTime;
+    oscillator.type = region === "hive" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(from, now);
+    oscillator.frequency.exponentialRampToValueAtTime(to, now + .34);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(region === "hive" ? .035 : .06, now + .04);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .48);
+    oscillator.connect(gain).connect(nodes.master);
+    oscillator.start(now);
+    oscillator.stop(now + .5);
+  }
+
+  function playNarration(cue: "intro" | RegionKey) {
+    if (!audioRef.current) {
+      startAudio();
+      setSoundOn(true);
+    }
+    if (cue !== "intro") playRoomEffect(cue);
+    if (narrationRef.current) narrationRef.current.pause();
+    const narration = new Audio(NARRATIONS[cue]);
+    narration.preload = "auto";
+    narration.volume = .76;
+    narrationRef.current = narration;
+    void narration.play().catch(() => toast("Lời dẫn đang chờ một cái chạm", { description: "Hãy chạm lại nút Nghe Ong để bắt đầu âm thanh." }));
+  }
+
   useEffect(() => {
     if (soundOn) updateAudioScene();
   }, [soundOn, time, weather]);
@@ -190,22 +255,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const snapshot: GardenProgressSnapshot = {
-      version: 2,
-      updatedAt: new Date().toISOString(),
-      time,
-      weather,
-      plots,
-      selectedPlot,
-      water,
-      seeds,
-      honey,
-      beeBond,
-      butterflySeen,
-      memory: memoryProgress,
-    };
-    saveGardenProgress(snapshot);
-  }, [beeBond, butterflySeen, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
+    saveGardenProgress(gardenProgress);
+  }, [gardenProgress]);
 
   function toggleSound() {
     if (soundOn) {
@@ -273,6 +324,7 @@ export default function Home() {
 
   function talkToBee() {
     setBeeBond((current) => current + 1);
+    playNarration("intro");
     if (beeBond >= 16 && memoryProgress.porch.status < 2) {
       setMemoryProgress((current) => ({ ...current, porch: { ...current.porch, status: 2, fragments: current.porch.fragments.includes("bee-three-knocks") ? current.porch.fragments : [...current.porch.fragments, "bee-three-knocks"] } }));
       playChime("magic");
@@ -302,6 +354,19 @@ export default function Home() {
   function handleRegionUnderstood() {
     setHoney((current) => current + 2);
     setBeeBond((current) => current + 1);
+  }
+
+  function importGardenProgress(snapshot: GardenProgressSnapshot) {
+    setTime(snapshot.time);
+    setWeather(snapshot.weather);
+    setPlots(snapshot.plots);
+    setSelectedPlot(snapshot.selectedPlot);
+    setWater(snapshot.water);
+    setSeeds(snapshot.seeds);
+    setHoney(snapshot.honey);
+    setBeeBond(snapshot.beeBond);
+    setButterflySeen(snapshot.butterflySeen);
+    setMemoryProgress(mergeMemoryProgress(snapshot.memory));
   }
 
   return (
@@ -350,7 +415,7 @@ export default function Home() {
           </section>
 
           <section className="note-card mission-card">
-            <div className="card-kicker"><span className="pollen-dot moss" /> Việc nhỏ hôm nay</div>
+            <div className="card-kicker"><span className="pollen-dot moss" /> Điều vườn đang nhờ</div>
             <ul className="mission-list">
               <li className="done"><span>✓</span> Tưới ít nhất một cây</li>
               <li><span>○</span> Theo dấu Bướm xanh</li>
@@ -361,7 +426,7 @@ export default function Home() {
           </section>
 
           <section className="note-card audio-card">
-            <div className="audio-head"><div><AudioLines size={17} /> Âm thanh vườn</div><span className={soundOn ? "status-dot live" : "status-dot"}>{soundOn ? "ĐANG PHÁT" : "TẮT"}</span></div>
+            <div className="audio-head"><div><AudioLines size={17} /> Nhịp thở khu vườn</div><span className={soundOn ? "status-dot live" : "status-dot"}>{soundOn ? "ĐANG PHÁT" : "TẮT"}</span></div>
             <p>{environment}</p>
             <button className="text-action" onClick={toggleSound}>{soundOn ? "Để khu vườn nghỉ" : "Đánh thức giai điệu"}<ChevronRight size={14} /></button>
           </section>
@@ -375,11 +440,12 @@ export default function Home() {
                   <p className="eyebrow">Mảnh Vườn Số 01</p>
                   <h2>Buổi {time === "day" ? "sáng" : "đêm"} dịu trong khu vườn</h2>
                 </div>
-                <div className="honey-counter"><span>◉</span><strong>{honey}</strong><small>Mật Ong</small></div>
+                <div className="honey-counter"><span>◉</span><strong>{honey}</strong><small>Giọt mật</small></div>
               </div>
 
               <div className="garden-canvas" style={{ backgroundImage: `linear-gradient(90deg, rgba(33, 56, 36, .16), rgba(255,255,255,0) 52%), url(${ASSETS.hero})` }}>
                 <div className="garden-stamp">{environment}</div>
+                <GardenDecorations progress={memoryProgress} />
                 <button className="creature butterfly" onClick={followButterfly} aria-label="Theo Bướm xanh"><span className="butterfly-mark">✧</span><span>Theo Bướm</span></button>
                 <button className="creature bee" onClick={talkToBee} aria-label="Nói chuyện với Ong"><Bug size={22} /><span>Hỏi Ong</span></button>
                 <button className="door-hotspot" onClick={inspectDoor} aria-label="Kiểm tra cánh cửa bí ẩn"><LockKeyhole size={18} /><span>Cánh cửa</span></button>
@@ -396,21 +462,23 @@ export default function Home() {
               <div className="garden-toolbar">
                 <div className="selection-note"><span className={`state-mark ${selected.state}`} /> <div><strong>{selected.name}</strong><p>{selected.note}</p></div></div>
                 <div className="tool-actions">
-                  <Button variant="outline" className="tool-button" onClick={plantSeed}><Flower2 size={17} /> Gieo hạt <b>{seeds}</b></Button>
+                  <Button variant="outline" className="tool-button" onClick={plantSeed}><Flower2 size={17} /> Đặt một hạt <b>{seeds}</b></Button>
                   <Button className="honey-button" onClick={waterPlant}><Droplets size={17} /> Tưới cây <b>{water}</b></Button>
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === "memory" && <MemoryAtlas progress={memoryProgress} onProgressChange={setMemoryProgress} onRegionUnderstood={handleRegionUnderstood} time={time} weather={weather} onTimeChange={setTime} onWeatherChange={setWeather} onChime={playChime} />}
+          {activeTab === "memory" && <MemoryAtlas progress={memoryProgress} onProgressChange={setMemoryProgress} onRegionUnderstood={handleRegionUnderstood} onNarrate={playNarration} time={time} weather={weather} onTimeChange={setTime} onWeatherChange={setWeather} onChime={playChime} />}
 
           {activeTab === "journal" && (
             <div className="journal-view">
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
               <MutationGallery />
+              <MemoryRewards progress={memoryProgress} />
               <article className="journal-entry faint"><div className="entry-date">Chưa có ngày</div><h3>Một trang dính kín bằng sáp mật ong</h3><p>Bạn chưa thể đọc được dòng này. Có vẻ nó cần năm mảnh ký ức.</p><button onClick={inspectDoor} className="text-action">Xem lại cánh cửa <ChevronRight size={14} /></button></article>
+              <ProgressArchive snapshot={gardenProgress} onImport={importGardenProgress} />
               <div className="inventory-panel"><div className="inventory-heading"><div><Package size={18} /><span>Túi đồ</span></div><small>{filledSlots.length} / 12 ô</small></div><div className="inventory-grid">{Array.from({ length: 12 }).map((_, index) => { const item = filledSlots[index]; return <div className={`inventory-slot ${item ? item.tone : "empty"}`} key={index}>{item ? <><span>{item.icon}</span><small>{item.amount}</small><em>{item.label}</em></> : <span className="slot-empty">·</span>}</div>; })}</div></div>
             </div>
           )}
@@ -423,7 +491,7 @@ export default function Home() {
             <div className="door-card-top"><span className="wax-seal">05</span><span>Hồ sơ bí mật</span></div>
             <div className="door-card-bottom"><p>Cánh cửa không tên</p><h3>{memoryCount < 5 ? "Nó đang lắng nghe" : "Nó đang chờ bạn"}</h3><button onClick={inspectDoor}>Chạm vào cánh cửa <ChevronRight size={16} /></button></div>
           </section>
-          <section className="inventory-mini"><div className="rail-heading"><span><Package size={16} /> Túi đồ</span><small>12 phong bì</small></div><div className="specimen-rack">{filledSlots.map((item) => <div className={`specimen-tag ${item.tone}`} key={item.label}><span>{item.icon}</span><div><small>{item.label}</small><b>× {item.amount}</b></div><i /></div>)}<div className="empty-envelope"><span>8 phong bì</span><small>đang chờ dấu vết</small></div></div><button className="text-action" onClick={() => setActiveTab("journal")}>Mở túi đồ <ChevronRight size={14} /></button></section>
+          <section className="inventory-mini"><div className="rail-heading"><span><Package size={16} /> Phong bì dấu vết</span><small>4 / 12 đã ghi</small></div><div className="specimen-rack">{filledSlots.map((item) => <div className={`specimen-tag ${item.tone}`} key={item.label}><span>{item.icon}</span><div><small>{item.label}</small><b>× {item.amount}</b></div><i /></div>)}<div className="empty-envelope"><span>8 phong bì</span><small>đang chờ được ghi nhận</small></div></div><button className="text-action" onClick={() => setActiveTab("journal")}>Mở sổ dấu vết <ChevronRight size={14} /></button></section>
           <section className="garden-weather"><div>{time === "day" ? <Sun size={20} /> : <Moon size={20} />}<span>{time === "day" ? "Ngày 12" : "Đêm 12"}</span></div><p>{weather === "rain" ? "Mưa làm Bướm xanh xuất hiện." : "Trời trong, cây nở chậm rãi."}</p><small className="save-note">● Tự lưu trong trình duyệt</small></section>
         </aside>
       </main>

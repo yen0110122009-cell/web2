@@ -25,7 +25,7 @@ export type MemoryRegionProgress = {
 export type MemoryProgress = Record<RegionKey, MemoryRegionProgress>;
 
 export type GardenProgressSnapshot = {
-  version: 2;
+  version: 3;
   updatedAt: string;
   time: TimeOfDay;
   weather: Weather;
@@ -39,9 +39,39 @@ export type GardenProgressSnapshot = {
   memory: MemoryProgress;
 };
 
-export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v2";
+type BackupEnvelope = {
+  kind: "vuon-nho-cua-ong-backup";
+  format: 1;
+  exportedAt: string;
+  progress: GardenProgressSnapshot;
+};
+
+export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v3";
+const LEGACY_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v2";
+const MAX_BACKUP_SIZE = 1_000_000;
+const REGION_KEYS: RegionKey[] = ["porch", "seed", "lake", "hive", "room"];
+const PLANT_STATES: PlantState[] = ["empty", "seed", "thirsty", "bloom", "mutated"];
 
 const blankRegion = (): MemoryRegionProgress => ({ status: 0, fragments: [], steps: [] });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function asString(value: unknown, fallback = "") {
+  return typeof value === "string" ? value.slice(0, 120) : fallback;
+}
+
+function asAmount(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(9999, Math.round(value))) : fallback;
+}
+
+function asPlot(value: unknown): GardenPlot | null {
+  if (!isRecord(value) || typeof value.id !== "number" || !Number.isInteger(value.id)) return null;
+  const state = PLANT_STATES.includes(value.state as PlantState) ? (value.state as PlantState) : null;
+  if (!state) return null;
+  return { id: value.id, name: asString(value.name, "Ô đất nhỏ"), state, emoji: asString(value.emoji, "·"), note: asString(value.note, "Một dấu vết yên lặng.") };
+}
 
 export function createMemoryProgress(): MemoryProgress {
   return {
@@ -56,25 +86,46 @@ export function createMemoryProgress(): MemoryProgress {
 export function mergeMemoryProgress(saved?: Partial<MemoryProgress> | null): MemoryProgress {
   const base = createMemoryProgress();
   if (!saved) return base;
-  return (Object.keys(base) as RegionKey[]).reduce<MemoryProgress>((result, key) => {
+  return REGION_KEYS.reduce<MemoryProgress>((result, key) => {
     const candidate = saved[key];
     result[key] = {
       status: candidate && [0, 1, 2, 3].includes(candidate.status) ? candidate.status : base[key].status,
-      fragments: Array.isArray(candidate?.fragments) ? candidate.fragments.filter((entry): entry is string => typeof entry === "string") : base[key].fragments,
-      steps: Array.isArray(candidate?.steps) ? candidate.steps.filter((entry): entry is string => typeof entry === "string") : base[key].steps,
+      fragments: Array.isArray(candidate?.fragments) ? candidate.fragments.filter((entry): entry is string => typeof entry === "string").slice(0, 80) : base[key].fragments,
+      steps: Array.isArray(candidate?.steps) ? candidate.steps.filter((entry): entry is string => typeof entry === "string").slice(0, 120) : base[key].steps,
     };
     return result;
   }, {} as MemoryProgress);
 }
 
+export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot | null {
+  if (!isRecord(value) || (value.version !== 2 && value.version !== 3) || !Array.isArray(value.plots)) return null;
+  const plots = value.plots.map(asPlot).filter((plot): plot is GardenPlot => Boolean(plot));
+  if (!plots.length) return null;
+  const time: TimeOfDay = value.time === "night" ? "night" : "day";
+  const weather: Weather = value.weather === "rain" ? "rain" : "clear";
+  return {
+    version: 3,
+    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+    time,
+    weather,
+    plots,
+    selectedPlot: asAmount(value.selectedPlot, plots[0].id),
+    water: asAmount(value.water, 4),
+    seeds: asAmount(value.seeds, 3),
+    honey: asAmount(value.honey, 42),
+    beeBond: asAmount(value.beeBond, 14),
+    butterflySeen: value.butterflySeen === true,
+    memory: mergeMemoryProgress(isRecord(value.memory) ? (value.memory as Partial<MemoryProgress>) : undefined),
+  };
+}
+
 export function loadGardenProgress(): Partial<GardenProgressSnapshot> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(GARDEN_PROGRESS_KEY);
-    if (!raw) return {};
-    const value = JSON.parse(raw) as Partial<GardenProgressSnapshot>;
-    if (value.version !== 2) return {};
-    return value;
+    const current = window.localStorage.getItem(GARDEN_PROGRESS_KEY);
+    const legacy = current ? null : window.localStorage.getItem(LEGACY_PROGRESS_KEY);
+    const restored = normalizeGardenProgress(JSON.parse(current ?? legacy ?? "null"));
+    return restored ?? {};
   } catch {
     return {};
   }
@@ -86,5 +137,22 @@ export function saveGardenProgress(snapshot: GardenProgressSnapshot) {
     window.localStorage.setItem(GARDEN_PROGRESS_KEY, JSON.stringify(snapshot));
   } catch {
     // Không chặn trải nghiệm khi trình duyệt đang từ chối bộ nhớ cục bộ.
+  }
+}
+
+export function serializeGardenBackup(snapshot: GardenProgressSnapshot) {
+  const envelope: BackupEnvelope = { kind: "vuon-nho-cua-ong-backup", format: 1, exportedAt: new Date().toISOString(), progress: snapshot };
+  return JSON.stringify(envelope, null, 2);
+}
+
+export function parseGardenBackup(raw: string): { snapshot: GardenProgressSnapshot } | { error: string } {
+  if (raw.length > MAX_BACKUP_SIZE) return { error: "Tệp này quá lớn để là một trang sao lưu của khu vườn." };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const source = isRecord(parsed) && parsed.kind === "vuon-nho-cua-ong-backup" ? parsed.progress : parsed;
+    const snapshot = normalizeGardenProgress(source);
+    return snapshot ? { snapshot } : { error: "Tệp không chứa một tiến trình Vườn Nhỏ Của Ong hợp lệ." };
+  } catch {
+    return { error: "Không thể đọc tệp này. Hãy chọn đúng tệp JSON đã xuất từ khu vườn." };
   }
 }

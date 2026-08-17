@@ -32,6 +32,7 @@ type MemoryAtlasProps = {
   progress: MemoryProgress;
   onProgressChange: (next: MemoryProgress) => void;
   onRegionUnderstood: (region: RegionKey) => void;
+  onNarrate: (region: RegionKey) => void;
   time: TimeOfDay;
   weather: Weather;
   onTimeChange: (time: TimeOfDay) => void;
@@ -63,7 +64,7 @@ function statusClass(status: number) {
   return ["fog", "trace", "joined", "understood"][status] ?? "fog";
 }
 
-export default function MemoryAtlas({ progress, onProgressChange, onRegionUnderstood, time, weather, onTimeChange, onWeatherChange, onChime }: MemoryAtlasProps) {
+export default function MemoryAtlas({ progress, onProgressChange, onRegionUnderstood, onNarrate, time, weather, onTimeChange, onWeatherChange, onChime }: MemoryAtlasProps) {
   const [activeRoom, setActiveRoom] = useState<RegionKey | null>(null);
   const [selectedLeaf, setSelectedLeaf] = useState<string | null>(null);
   const [selectedSeed, setSelectedSeed] = useState<"sun" | "rain" | "night" | "nameless">("sun");
@@ -124,6 +125,7 @@ export default function MemoryAtlas({ progress, onProgressChange, onRegionUnders
     markVisited(key);
     setActiveRoom(key);
     onChime("soft");
+    onNarrate(key);
   }
 
   function selectPorchJar(jar: string) {
@@ -294,7 +296,7 @@ export default function MemoryAtlas({ progress, onProgressChange, onRegionUnders
       <header className="memory-room-header">
         <button className="room-back" onClick={() => setActiveRoom(null)}><ArrowLeft size={16} /> Bản đồ ký ức</button>
         <div><p>{room.order} · {statusLabel(progress[activeRoom].status)}</p><h2>{room.name}</h2></div>
-        <button className="room-sound" onClick={() => { onChime("soft"); toast("Ong khẽ dẫn chuyện", { description: room.ambience }); }}><Volume2 size={17} /><span>Nghe Ong</span></button>
+        <button className="room-sound" onClick={() => { onChime("soft"); onNarrate(activeRoom); toast("Ong khẽ dẫn chuyện", { description: room.ambience }); }}><Volume2 size={17} /><span>Nghe Ong</span></button>
       </header>
 
       {activeRoom === "porch" && <div className={`puzzle-stage porch-stage ${porchMatched.length === 7 ? "is-silver" : ""}`}>
