@@ -29,11 +29,13 @@ import MemoryAtlas from "@/components/MemoryAtlas";
 import MutationGallery from "@/components/MutationGallery";
 import ProgressArchive from "@/components/ProgressArchive";
 import { GardenDecorations, MemoryRewards } from "@/components/MemoryRewards";
+import { NarrationCaption, type ActiveCaption } from "@/components/NarrationCaption";
 import {
   createMemoryProgress,
   loadGardenProgress,
   mergeMemoryProgress,
   saveGardenProgress,
+  type DecorationPlacement,
   type GardenPlot,
   type GardenProgressSnapshot,
   type MemoryProgress,
@@ -43,6 +45,8 @@ import {
 } from "@/lib/garden-progress";
 
 type Tab = "garden" | "memory" | "journal";
+type NarrationCue = "intro" | RegionKey;
+type CaptionLine = { start: number; end: number; text: string };
 
 type AudioNodes = {
   context: AudioContext;
@@ -61,13 +65,23 @@ const ASSETS = {
   logo: "/manus-storage/bee-garden-logo_ac8c5c49.png",
 };
 
-const NARRATIONS: Record<"intro" | RegionKey, string> = {
+const NARRATIONS: Record<NarrationCue, string> = {
   intro: "/manus-storage/ong-garden-intro_816a1f21.wav",
   porch: "/manus-storage/ong-memory-porch_79a6b8d9.wav",
   seed: "/manus-storage/ong-memory-seed_c97014c1.wav",
   lake: "/manus-storage/ong-memory-pond_5685f11b.wav",
   hive: "/manus-storage/ong-memory-hive_7fcb5af4.wav",
   room: "/manus-storage/ong-memory-room_d65dfa19.wav",
+};
+
+const CAPTION_LABELS: Record<NarrationCue, string> = { intro: "Lời mở đầu", porch: "Hiên Mật Ong", seed: "Vườn Hạt Cuối", lake: "Hồ Phản Chiếu", hive: "Tổ Ong Rỗng", room: "Phòng Không Tường" };
+const CAPTIONS: Record<NarrationCue, CaptionLine[]> = {
+  intro: [{ start: 0.3, end: 1.3, text: "Tớ là Ong." }, { start: 1.3, end: 7.7, text: "Mỗi dấu ấn cậu khôi phục, khu vườn sẽ nhớ thêm một điều dịu dàng." }],
+  porch: [{ start: 0.8, end: 4.6, text: "Dưới hiên, lá khô còn biết giữ bước chân." }, { start: 4.6, end: 8.1, text: "Hãy ghép chúng về đúng chỗ nhé." }],
+  seed: [{ start: 0.5, end: 2.7, text: "Hạt cuối không cần vội." }, { start: 2.7, end: 10.2, text: "Đợi mưa đêm rồi đặt nó xuống nơi đất còn ấm." }],
+  lake: [{ start: 0.4, end: 8.2, text: "Hồ chỉ nói thật khi mặt nước cùng lúc giữ được sáng, yên và tối." }],
+  hive: [{ start: 0.4, end: 4.1, text: "Lắng nghe khoảng trống giữa những tiếng vo ve." }, { start: 4.1, end: 7.7, text: "Đó là đường về của tớ." }],
+  room: [{ start: 0.4, end: 3.2, text: "Một ngày đã mất không ở ngoài kia." }, { start: 3.2, end: 7.6, text: "Nó đang nằm rải rác trong những thứ cậu đã nhặt." }],
 };
 
 const INITIAL_PLOTS: GardenPlot[] = [
@@ -110,8 +124,10 @@ export default function Home() {
   const [beeBond, setBeeBond] = useState(() => initialProgress.beeBond ?? 14);
   const [butterflySeen, setButterflySeen] = useState(() => initialProgress.butterflySeen ?? false);
   const [memoryProgress, setMemoryProgress] = useState<MemoryProgress>(() => initialProgress.memory ? mergeMemoryProgress(initialProgress.memory) : createMemoryProgress());
+  const [decorations, setDecorations] = useState<DecorationPlacement[]>(() => initialProgress.decorations ?? []);
   const [doorPanelOpen, setDoorPanelOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
+  const [caption, setCaption] = useState<ActiveCaption | null>(null);
   const audioRef = useRef<AudioNodes | null>(null);
   const narrationRef = useRef<HTMLAudioElement | null>(null);
 
@@ -129,7 +145,7 @@ export default function Home() {
     [fragmentCount, honey, seeds],
   );
   const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
-    version: 3,
+    version: 4,
     updatedAt: new Date().toISOString(),
     time,
     weather,
@@ -141,7 +157,8 @@ export default function Home() {
     beeBond,
     butterflySeen,
     memory: memoryProgress,
-  }), [beeBond, butterflySeen, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
+    decorations,
+  }), [beeBond, butterflySeen, decorations, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -186,6 +203,7 @@ export default function Home() {
       narrationRef.current.currentTime = 0;
       narrationRef.current = null;
     }
+    setCaption(null);
     if (!nodes) return;
     nodes.master.gain.exponentialRampToValueAtTime(0.0001, nodes.context.currentTime + 0.18);
     window.setTimeout(() => {
@@ -232,18 +250,37 @@ export default function Home() {
     oscillator.stop(now + .5);
   }
 
-  function playNarration(cue: "intro" | RegionKey) {
+  function playNarration(cue: NarrationCue) {
     if (!audioRef.current) {
       startAudio();
       setSoundOn(true);
     }
     if (cue !== "intro") playRoomEffect(cue);
-    if (narrationRef.current) narrationRef.current.pause();
+    if (narrationRef.current) {
+      narrationRef.current.pause();
+      narrationRef.current.currentTime = 0;
+    }
+    setCaption(null);
     const narration = new Audio(NARRATIONS[cue]);
+    const lines = CAPTIONS[cue];
+    const updateCaption = () => {
+      const index = lines.findIndex((line) => narration.currentTime >= line.start && narration.currentTime < line.end);
+      const resolvedIndex = index === -1 && narration.currentTime >= lines[lines.length - 1].end ? lines.length - 1 : index;
+      setCaption(resolvedIndex === -1 ? null : { cueLabel: CAPTION_LABELS[cue], text: lines[resolvedIndex].text, index: resolvedIndex + 1, total: lines.length });
+    };
     narration.preload = "auto";
     narration.volume = .76;
+    narration.onplay = updateCaption;
+    narration.ontimeupdate = updateCaption;
+    narration.onended = () => {
+      if (narrationRef.current === narration) narrationRef.current = null;
+      setCaption(null);
+    };
     narrationRef.current = narration;
-    void narration.play().catch(() => toast("Lời dẫn đang chờ một cái chạm", { description: "Hãy chạm lại nút Nghe Ong để bắt đầu âm thanh." }));
+    void narration.play().catch(() => {
+      setCaption(null);
+      toast("Lời dẫn đang chờ một cái chạm", { description: "Hãy chạm lại nút Nghe Ong để bắt đầu âm thanh." });
+    });
   }
 
   useEffect(() => {
@@ -367,6 +404,7 @@ export default function Home() {
     setBeeBond(snapshot.beeBond);
     setButterflySeen(snapshot.butterflySeen);
     setMemoryProgress(mergeMemoryProgress(snapshot.memory));
+    setDecorations(snapshot.decorations);
   }
 
   return (
@@ -440,12 +478,15 @@ export default function Home() {
                   <p className="eyebrow">Mảnh Vườn Số 01</p>
                   <h2>Buổi {time === "day" ? "sáng" : "đêm"} dịu trong khu vườn</h2>
                 </div>
-                <div className="honey-counter"><span>◉</span><strong>{honey}</strong><small>Giọt mật</small></div>
+                <div className="honey-counter honey-seal"><span>◉</span><strong>{honey}</strong><small>Giọt mật</small></div>
               </div>
 
               <div className="garden-canvas" style={{ backgroundImage: `linear-gradient(90deg, rgba(33, 56, 36, .16), rgba(255,255,255,0) 52%), url(${ASSETS.hero})` }}>
                 <div className="garden-stamp">{environment}</div>
-                <GardenDecorations progress={memoryProgress} />
+                <div className="garden-marginalia" aria-hidden="true"><span>✦</span><em>Mẫu vật sống · ghi sau cơn mưa</em></div>
+                <div className="bee-flight-trace" aria-hidden="true"><i /><i /><i /></div>
+                <GardenDecorations progress={memoryProgress} placements={decorations} onPlacementChange={setDecorations} />
+                <NarrationCaption caption={caption} onDismiss={() => { narrationRef.current?.pause(); setCaption(null); }} />
                 <button className="creature butterfly" onClick={followButterfly} aria-label="Theo Bướm xanh"><span className="butterfly-mark">✧</span><span>Theo Bướm</span></button>
                 <button className="creature bee" onClick={talkToBee} aria-label="Nói chuyện với Ong"><Bug size={22} /><span>Hỏi Ong</span></button>
                 <button className="door-hotspot" onClick={inspectDoor} aria-label="Kiểm tra cánh cửa bí ẩn"><LockKeyhole size={18} /><span>Cánh cửa</span></button>
@@ -476,7 +517,7 @@ export default function Home() {
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
               <MutationGallery />
-              <MemoryRewards progress={memoryProgress} />
+              <MemoryRewards progress={memoryProgress} placements={decorations} onPlacementChange={setDecorations} onVisitGarden={() => setActiveTab("garden")} />
               <article className="journal-entry faint"><div className="entry-date">Chưa có ngày</div><h3>Một trang dính kín bằng sáp mật ong</h3><p>Bạn chưa thể đọc được dòng này. Có vẻ nó cần năm mảnh ký ức.</p><button onClick={inspectDoor} className="text-action">Xem lại cánh cửa <ChevronRight size={14} /></button></article>
               <ProgressArchive snapshot={gardenProgress} onImport={importGardenProgress} />
               <div className="inventory-panel"><div className="inventory-heading"><div><Package size={18} /><span>Túi đồ</span></div><small>{filledSlots.length} / 12 ô</small></div><div className="inventory-grid">{Array.from({ length: 12 }).map((_, index) => { const item = filledSlots[index]; return <div className={`inventory-slot ${item ? item.tone : "empty"}`} key={index}>{item ? <><span>{item.icon}</span><small>{item.amount}</small><em>{item.label}</em></> : <span className="slot-empty">·</span>}</div>; })}</div></div>

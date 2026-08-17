@@ -1,6 +1,7 @@
 /* Design system — Nhật ký Mật Ong: giấy ivory, xanh rêu, mật hổ phách và mực đêm. */
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./field-journal-polish.css";
 
 @custom-variant dark (&:is(.dark *));
 

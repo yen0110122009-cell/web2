@@ -12,4 +12,10 @@
 - [x] Viết lời dẫn ngắn cho Ong và năm căn phòng ký ức, đồng thời tạo hiệu ứng âm thanh ngữ cảnh.
 - [x] Xây dựng giao diện xuất–nhập tệp, tủ trưng bày phần thưởng và các điều khiển âm thanh.
 - [x] Kiểm thử tệp lỗi, tệp hợp lệ, thao tác tải lại trang, responsive và build production.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Xác định toạ độ tương đối, vùng đặt hợp lệ và hành vi kéo thả/chạm cho phần thưởng trang trí.
+- [x] Mở rộng schema tiến trình và sao lưu JSON để lưu bố cục trang trí người chơi đã sắp đặt.
+- [x] Viết dữ liệu phụ đề theo thời gian cho lời dẫn của Ong và từng khu vực ký ức.
+- [x] Xây dựng bề mặt kéo thả có phản hồi trực quan, kho vật trang trí và hộp phụ đề đồng bộ.
+- [x] Kiểm thử chuột, cảm ứng, tải lại trang, sao lưu–khôi phục và responsive.
 - [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.

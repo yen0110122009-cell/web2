@@ -1,0 +1,292 @@
+/* Nhật ký Mật Ong — lớp hoàn thiện: hiện vật ép hoa, dấu sáp mật và mực đêm thấm giấy. */
+
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: clamp(54px, 7vw, 108px);
+  bottom: -1px;
+  width: 74px;
+  height: 4px;
+  background: radial-gradient(circle, #d9982c 0 1.4px, transparent 1.7px) 0 0 / 14px 4px;
+  opacity: .68;
+  pointer-events: none;
+}
+
+.brand-mark {
+  position: relative;
+  overflow: visible;
+  border-radius: 53% 47% 55% 45% / 42% 45% 55% 58%;
+  background: linear-gradient(145deg, #f2c557 0 42%, #d9982c 43% 100%);
+  box-shadow: inset 0 0 0 1px rgba(102, 67, 12, .22), 0 7px 14px rgba(164, 110, 19, .17);
+}
+
+.brand-mark::before {
+  content: "";
+  position: absolute;
+  inset: 7px 13px 7px 9px;
+  border: 1.5px solid #315342;
+  border-right: 0;
+  border-top: 0;
+  border-radius: 50% 0 0 50%;
+  transform: rotate(-34deg);
+}
+
+.brand-leaf {
+  position: absolute;
+  right: 6px;
+  bottom: 8px;
+  width: 13px;
+  height: 9px;
+  border-radius: 100% 0 100% 0;
+  background: #315342;
+  transform: rotate(-26deg);
+}
+
+.brand-flight {
+  position: absolute;
+  top: -2px;
+  right: -9px;
+  width: 15px;
+  height: 15px;
+  border-top: 1.5px dashed #6c8356;
+  border-radius: 50%;
+  transform: rotate(17deg);
+}
+
+.environment-chip,
+.sound-button,
+.journal-filter {
+  border-radius: 2px 9px 3px 10px;
+  box-shadow: 2px 2px 0 rgba(75, 72, 47, .06);
+}
+
+.environment-chip:nth-child(1) { transform: rotate(-.6deg); }
+.environment-chip:nth-child(2) { transform: rotate(.5deg); }
+
+.note-card,
+.inventory-mini,
+.garden-weather,
+.inventory-panel {
+  position: relative;
+  border-radius: 2px 16px 3px 13px;
+  background-image: linear-gradient(90deg, transparent 0 17px, rgba(87, 108, 74, .08) 18px 19px, transparent 20px), radial-gradient(rgba(95, 89, 58, .12) .6px, transparent .8px);
+  background-size: auto, 7px 7px;
+}
+
+.note-card::after,
+.inventory-mini::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: 16px;
+  width: 34px;
+  height: 9px;
+  background: rgba(222, 190, 109, .43);
+  transform: rotate(5deg);
+  border-left: 1px solid rgba(155, 112, 36, .18);
+  border-right: 1px solid rgba(155, 112, 36, .18);
+}
+
+.card-kicker::after {
+  content: "";
+  width: 19px;
+  height: 19px;
+  margin-left: auto;
+  border-radius: 52% 48% 51% 49%;
+  background: radial-gradient(circle at 45% 40%, #f6d379 0 18%, #d9982c 20% 100%);
+  box-shadow: inset 0 0 0 1px rgba(113, 72, 10, .25);
+  opacity: .78;
+}
+
+.honey-seal {
+  position: relative;
+  overflow: visible;
+  clip-path: polygon(9% 5%, 85% 0, 100% 20%, 94% 92%, 16% 100%, 0 78%, 4% 18%);
+  transform: rotate(2.2deg);
+}
+
+.honey-seal::after {
+  content: "đã ghi";
+  position: absolute;
+  right: -8px;
+  bottom: -12px;
+  padding: 2px 5px;
+  background: #315342;
+  color: #fff8df;
+  font: 800 7px/1 "DM Sans", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+}
+
+.progress-line {
+  position: relative;
+  overflow: visible;
+  border-radius: 1px;
+  background: repeating-linear-gradient(90deg, #e6dfcf 0 8px, #f5efe1 8px 10px);
+}
+
+.progress-line::after {
+  content: "⌁";
+  position: absolute;
+  right: -2px;
+  top: -9px;
+  color: #315342;
+  font: 700 17px/1 "Fraunces", serif;
+}
+
+.garden-canvas {
+  border-radius: 1px 22px 4px 19px;
+  border-color: rgba(77, 96, 54, .34);
+  box-shadow: 0 18px 0 rgba(194, 177, 133, .18), 0 25px 46px rgba(43, 57, 36, .14);
+  background-blend-mode: multiply, normal;
+}
+
+.garden-canvas::before {
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(255, 248, 220, .16) 0 2px, transparent 2px 100%), repeating-linear-gradient(180deg, transparent 0 48px, rgba(62, 91, 65, .10) 49px 50px);
+  background-size: 58px 100%, 100% 50px;
+  mix-blend-mode: multiply;
+  opacity: .55;
+}
+
+.garden-stamp {
+  z-index: 6;
+  border-radius: 1px 9px 3px 10px;
+  transform: rotate(-1deg);
+  box-shadow: 2px 3px 0 rgba(46, 72, 48, .08);
+}
+
+.garden-marginalia {
+  position: absolute;
+  z-index: 2;
+  top: 19px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  color: rgba(42, 77, 55, .76);
+  background: rgba(255, 248, 225, .49);
+  border-top: 1px solid rgba(54, 90, 60, .35);
+  border-bottom: 1px solid rgba(54, 90, 60, .25);
+  transform: rotate(2.2deg);
+  font-size: 8px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.garden-marginalia span { color: #d9982c; font-size: 14px; }
+.garden-marginalia em { font-style: normal; font-weight: 800; }
+
+.bee-flight-trace {
+  position: absolute;
+  z-index: 2;
+  left: 13%;
+  top: 31%;
+  width: 118px;
+  height: 62px;
+  border-top: 1.5px dashed rgba(49, 83, 66, .58);
+  border-radius: 52% 48% 0 0;
+  transform: rotate(-18deg);
+  pointer-events: none;
+}
+
+.bee-flight-trace i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d9982c;
+  box-shadow: 0 0 0 3px rgba(250, 236, 184, .55);
+}
+
+.bee-flight-trace i:nth-child(1) { left: 12px; top: -3px; }
+.bee-flight-trace i:nth-child(2) { left: 55px; top: -10px; }
+.bee-flight-trace i:nth-child(3) { right: 9px; top: 4px; }
+
+.plot-grid { z-index: 4; gap: 8px; transform: translateX(-50%) rotate(-1deg); }
+
+.plot {
+  height: 88px;
+  border-radius: 1px 11px 2px 9px;
+  color: #314b37;
+  background: linear-gradient(145deg, rgba(255, 252, 234, .96), rgba(235, 230, 198, .94));
+  box-shadow: inset 0 0 0 1px rgba(85, 108, 75, .18), 3px 5px 0 rgba(49, 83, 66, .10), 0 8px 13px rgba(29, 57, 35, .14);
+  clip-path: polygon(0 0, 95% 0, 100% 15%, 98% 100%, 4% 99%, 0 84%);
+}
+
+.plot::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  width: 27px;
+  border-top: 1px dashed rgba(49, 83, 66, .32);
+}
+
+.plot:hover,
+.plot.selected {
+  transform: translateY(-5px) rotate(.6deg);
+  box-shadow: inset 0 0 0 2px rgba(217, 152, 44, .56), 4px 7px 0 rgba(49, 83, 66, .13), 0 13px 17px rgba(29, 57, 35, .18);
+}
+
+.plot-emoji { color: #55754c; text-shadow: none; }
+.plot-name { color: #315342; font: 700 11px/1.05 "Fraunces", serif; white-space: normal; }
+.plot.mutated .plot-emoji { color: #d9982c; text-shadow: 0 0 10px rgba(217, 152, 44, .36); }
+
+.creature,
+.door-hotspot { z-index: 7; border-radius: 1px 10px 2px 9px; }
+
+.door-card {
+  position: relative;
+  border-radius: 1px 19px 3px 14px;
+  clip-path: polygon(2% 0, 96% 2%, 100% 16%, 97% 100%, 1% 97%, 0 6%);
+  border: 1px solid rgba(212, 177, 87, .33);
+  background-color: #183a3e;
+  background-blend-mode: overlay, normal;
+}
+
+.door-card::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  pointer-events: none;
+  border: 1px dashed rgba(244, 214, 126, .20);
+  background: radial-gradient(circle at 25% 20%, rgba(244, 203, 92, .33) 0 1px, transparent 1.6px) 0 0 / 18px 19px;
+  mix-blend-mode: screen;
+}
+
+.door-card-top,
+.door-card-bottom,
+.ink-door-drawing { position: relative; z-index: 2; }
+.wax-seal { box-shadow: 2px 2px 0 rgba(69, 45, 9, .38), inset 0 0 0 2px rgba(247, 216, 120, .31); transform: rotate(-8deg); }
+
+.specimen-tag,
+.empty-envelope {
+  border-radius: 1px 7px 2px 8px !important;
+  clip-path: polygon(0 0, 97% 0, 100% 16%, 98% 100%, 0 100%, 0 10%);
+}
+
+.specimen-tag::before {
+  content: "";
+  width: 3px;
+  align-self: stretch;
+  background: currentColor;
+  opacity: .45;
+}
+
+@media (max-width: 720px) {
+  .garden-marginalia { top: 14px; right: 12px; max-width: 142px; font-size: 7px; }
+  .bee-flight-trace { left: 9%; top: 26%; transform: scale(.72) rotate(-18deg); transform-origin: left top; }
+  .plot { height: 76px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .honey-seal,
+  .environment-chip:nth-child(1),
+  .environment-chip:nth-child(2),
+  .garden-stamp,
+  .garden-marginalia,
+  .wax-seal { transform: none; }
+}

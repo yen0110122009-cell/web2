@@ -24,8 +24,14 @@ export type MemoryRegionProgress = {
 
 export type MemoryProgress = Record<RegionKey, MemoryRegionProgress>;
 
+export type DecorationPlacement = {
+  id: RegionKey;
+  x: number;
+  y: number;
+};
+
 export type GardenProgressSnapshot = {
-  version: 3;
+  version: 4;
   updatedAt: string;
   time: TimeOfDay;
   weather: Weather;
@@ -37,6 +43,7 @@ export type GardenProgressSnapshot = {
   beeBond: number;
   butterflySeen: boolean;
   memory: MemoryProgress;
+  decorations: DecorationPlacement[];
 };
 
 type BackupEnvelope = {
@@ -46,8 +53,8 @@ type BackupEnvelope = {
   progress: GardenProgressSnapshot;
 };
 
-export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v3";
-const LEGACY_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v2";
+export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v4";
+const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
 const MAX_BACKUP_SIZE = 1_000_000;
 const REGION_KEYS: RegionKey[] = ["porch", "seed", "lake", "hive", "room"];
 const PLANT_STATES: PlantState[] = ["empty", "seed", "thirsty", "bloom", "mutated"];
@@ -71,6 +78,29 @@ function asPlot(value: unknown): GardenPlot | null {
   const state = PLANT_STATES.includes(value.state as PlantState) ? (value.state as PlantState) : null;
   if (!state) return null;
   return { id: value.id, name: asString(value.name, "Ô đất nhỏ"), state, emoji: asString(value.emoji, "·"), note: asString(value.note, "Một dấu vết yên lặng.") };
+}
+
+function asDecoration(value: unknown): DecorationPlacement | null {
+  if (!isRecord(value) || !REGION_KEYS.includes(value.id as RegionKey)) return null;
+  if (typeof value.x !== "number" || !Number.isFinite(value.x) || typeof value.y !== "number" || !Number.isFinite(value.y)) return null;
+  return {
+    id: value.id as RegionKey,
+    x: Math.max(4, Math.min(96, Math.round(value.x * 10) / 10)),
+    y: Math.max(6, Math.min(92, Math.round(value.y * 10) / 10)),
+  };
+}
+
+function mergeDecorations(value: unknown): DecorationPlacement[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<RegionKey>();
+  return value.reduce<DecorationPlacement[]>((placements, entry) => {
+    const placement = asDecoration(entry);
+    if (placement && !seen.has(placement.id)) {
+      seen.add(placement.id);
+      placements.push(placement);
+    }
+    return placements;
+  }, []);
 }
 
 export function createMemoryProgress(): MemoryProgress {
@@ -98,13 +128,13 @@ export function mergeMemoryProgress(saved?: Partial<MemoryProgress> | null): Mem
 }
 
 export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot | null {
-  if (!isRecord(value) || (value.version !== 2 && value.version !== 3) || !Array.isArray(value.plots)) return null;
+  if (!isRecord(value) || (value.version !== 2 && value.version !== 3 && value.version !== 4) || !Array.isArray(value.plots)) return null;
   const plots = value.plots.map(asPlot).filter((plot): plot is GardenPlot => Boolean(plot));
   if (!plots.length) return null;
   const time: TimeOfDay = value.time === "night" ? "night" : "day";
   const weather: Weather = value.weather === "rain" ? "rain" : "clear";
   return {
-    version: 3,
+    version: 4,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
     time,
     weather,
@@ -116,6 +146,7 @@ export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot 
     beeBond: asAmount(value.beeBond, 14),
     butterflySeen: value.butterflySeen === true,
     memory: mergeMemoryProgress(isRecord(value.memory) ? (value.memory as Partial<MemoryProgress>) : undefined),
+    decorations: mergeDecorations(value.decorations),
   };
 }
 
@@ -123,7 +154,7 @@ export function loadGardenProgress(): Partial<GardenProgressSnapshot> {
   if (typeof window === "undefined") return {};
   try {
     const current = window.localStorage.getItem(GARDEN_PROGRESS_KEY);
-    const legacy = current ? null : window.localStorage.getItem(LEGACY_PROGRESS_KEY);
+    const legacy = current ? null : LEGACY_PROGRESS_KEYS.map((key) => window.localStorage.getItem(key)).find(Boolean) ?? null;
     const restored = normalizeGardenProgress(JSON.parse(current ?? legacy ?? "null"));
     return restored ?? {};
   } catch {

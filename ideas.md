@@ -81,3 +81,5 @@ Logo là **một giọt mật nhỏ chứa đường bay hình xoắn của Ong*
 - Nhận diện đầu trang luôn dùng biểu tượng **giọt mật có đường bay xoắn của Ong kết thúc bằng lá non**, đi cùng wordmark Fraunces có chất truyện kể; không dùng logo vuông trống hoặc chữ mặc định.
 - Mặt bí ẩn sử dụng **mực đêm xanh-đen thấm trên giấy**, ánh phấn hổ phách và đường viền thực vật; không dùng nền đen thuần, neon hay card tối kiểu cao cấp.
 - Fraunces mang tiếng nói truyện kể cho tên cây, nhãn ký ức, lời Ong và các ghi chú; DM Sans chỉ phục vụ dữ liệu và thao tác thực dụng.
+- Dấu sáp mật, đường bay nét đứt của Ong và giọt mật phải lặp lại có chủ đích ở tiến trình, phần thưởng và ghi chú cần chú ý để tạo một nhịp nhận diện riêng.
+- Sân vườn vận hành như **trang mẫu vật sống**: có đường kẻ thực địa, chú thích lề, nhãn ép hoa và dấu băng giấy; thao tác chỉ được đặt lên trên lớp ghi chép này, không tách thành bảng điều khiển độc lập.
