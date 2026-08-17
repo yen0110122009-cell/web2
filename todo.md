@@ -64,3 +64,6 @@
 - [x] Xác định các lớp chữ có nền trong suốt hoặc thiếu tương phản trên desktop và điện thoại.
 - [x] Gia cố vật liệu nền giấy/mực, viền và bóng chữ cho các nhãn, thông báo và bảng nổi.
 - [x] Kiểm tra công khai ở ngày/đêm, đồng bộ GitHub và lưu checkpoint.
+- [x] Tái hiện điều kiện mở Hồ Phản Chiếu và chuỗi thao tác làm câu đố không hoàn thành.
+- [x] Sửa điều khiển hoặc logic tiến trình để ba trạng thái mặt hồ luôn có thể được ghi nhận.
+- [x] Kiểm tra luồng hoàn thành, đồng bộ GitHub và lưu checkpoint.
