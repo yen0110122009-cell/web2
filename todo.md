@@ -60,4 +60,4 @@
 - [x] Xác minh trang GitHub Pages, đồng bộ mã nguồn và lưu checkpoint.
 - [x] Chẩn đoán lỗi nạp font chữ và lời dẫn âm thanh trên GitHub Pages.
 - [x] Sửa đường dẫn, fallback và cơ chế phát âm thanh tương thích với Pages.
-- [ ] Kiểm tra công khai, đồng bộ GitHub và lưu checkpoint cho bản sửa.
+- [x] Kiểm tra công khai, đồng bộ GitHub và lưu checkpoint cho bản sửa.
