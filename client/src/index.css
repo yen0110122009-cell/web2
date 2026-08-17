@@ -3,6 +3,12 @@
 @import "tw-animate-css";
 @import "./field-journal-polish.css";
 
+/* Nhật ký Mật Ong — font cục bộ của Pages để chữ Việt không phụ thuộc mạng Google Fonts. */
+@font-face { font-family: "DM Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("https://yen0110122009-cell.github.io/web2/garden-assets/fonts/dm-sans-400.ttf") format("truetype"); }
+@font-face { font-family: "DM Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("https://yen0110122009-cell.github.io/web2/garden-assets/fonts/dm-sans-700.ttf") format("truetype"); }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 400; font-display: swap; src: url("https://yen0110122009-cell.github.io/web2/garden-assets/fonts/fraunces-400.ttf") format("truetype"); }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 700; font-display: swap; src: url("https://yen0110122009-cell.github.io/web2/garden-assets/fonts/fraunces-700.ttf") format("truetype"); }
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

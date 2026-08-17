@@ -245,8 +245,8 @@ export default function Home() {
 
   function startAudio() {
     if (audioRef.current) {
-      void audioRef.current.context.resume();
-      return;
+      void audioRef.current.context.resume().catch(() => undefined);
+      return audioRef.current;
     }
     const context = new AudioContext();
     const master = context.createGain();
@@ -264,8 +264,11 @@ export default function Home() {
     master.connect(context.destination);
     drone.start();
     pulse.start();
-    audioRef.current = { context, drone, pulse, master, droneGain, pulseGain };
+    const nodes = { context, drone, pulse, master, droneGain, pulseGain };
+    audioRef.current = nodes;
+    void context.resume().catch(() => undefined);
     updateAudioScene();
+    return nodes;
   }
 
   function stopAudio() {
@@ -323,10 +326,8 @@ export default function Home() {
   }
 
   function playNarration(cue: NarrationCue) {
-    if (!audioRef.current) {
-      startAudio();
-      setSoundOn(true);
-    }
+    startAudio();
+    setSoundOn(true);
     if (cue !== "intro") playRoomEffect(cue);
     if (narrationRef.current) {
       narrationRef.current.pause();
@@ -342,8 +343,14 @@ export default function Home() {
     };
     narration.preload = "auto";
     narration.volume = .76;
+    narration.load();
     narration.onplay = updateCaption;
     narration.ontimeupdate = updateCaption;
+    narration.onerror = () => {
+      if (narrationRef.current === narration) narrationRef.current = null;
+      setCaption(null);
+      toast("Không tải được lời dẫn", { description: "Hãy kiểm tra kết nối rồi chạm lại nút Hỏi Ong." });
+    };
     narration.onended = () => {
       if (narrationRef.current === narration) narrationRef.current = null;
       setCaption(null);
@@ -351,7 +358,7 @@ export default function Home() {
     narrationRef.current = narration;
     void narration.play().catch(() => {
       setCaption(null);
-      toast("Lời dẫn đang chờ một cái chạm", { description: "Hãy chạm lại nút Nghe Ong để bắt đầu âm thanh." });
+      toast("Lời dẫn đang chờ một cái chạm", { description: "Hãy chạm lại nút Hỏi Ong để bắt đầu âm thanh." });
     });
   }
 
