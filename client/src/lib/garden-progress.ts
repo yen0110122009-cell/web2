@@ -8,6 +8,7 @@ export type Weather = "clear" | "rain";
 export type PlantState = "empty" | "seed" | "thirsty" | "bloom" | "mutated";
 export type RegionKey = "porch" | "seed" | "lake" | "hive" | "room";
 export type SubtitleTone = "honey" | "moss" | "ink";
+export type SeasonPreset = "spring" | "summer" | "autumn" | "winter";
 
 export type GardenPlot = {
   id: number;
@@ -26,7 +27,8 @@ export type MemoryRegionProgress = {
 export type MemoryProgress = Record<RegionKey, MemoryRegionProgress>;
 
 export type DecorationPlacement = {
-  id: RegionKey;
+  id: string;
+  rewardKey: RegionKey;
   x: number;
   y: number;
   rotation: number;
@@ -47,7 +49,7 @@ export const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 8 };
 export const DEFAULT_SUBTITLE_SETTINGS: SubtitleSettings = { fontScale: 1, tone: "honey" };
 
 export type GardenProgressSnapshot = {
-  version: 5;
+  version: 6;
   updatedAt: string;
   time: TimeOfDay;
   weather: Weather;
@@ -62,6 +64,7 @@ export type GardenProgressSnapshot = {
   decorations: DecorationPlacement[];
   grid: GridSettings;
   subtitles: SubtitleSettings;
+  activeLayoutPreset: SeasonPreset | null;
 };
 
 type BackupEnvelope = {
@@ -71,12 +74,13 @@ type BackupEnvelope = {
   progress: GardenProgressSnapshot;
 };
 
-export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v5";
-const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
+export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v6";
+const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v5", "vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
 const MAX_BACKUP_SIZE = 1_000_000;
 const REGION_KEYS: RegionKey[] = ["porch", "seed", "lake", "hive", "room"];
 const PLANT_STATES: PlantState[] = ["empty", "seed", "thirsty", "bloom", "mutated"];
 const SUBTITLE_TONES: SubtitleTone[] = ["honey", "moss", "ink"];
+const SEASON_PRESETS: SeasonPreset[] = ["spring", "summer", "autumn", "winter"];
 
 const blankRegion = (): MemoryRegionProgress => ({ status: 0, fragments: [], steps: [] });
 
@@ -105,10 +109,13 @@ function asPlot(value: unknown): GardenPlot | null {
 }
 
 function asDecoration(value: unknown): DecorationPlacement | null {
-  if (!isRecord(value) || !REGION_KEYS.includes(value.id as RegionKey)) return null;
+  if (!isRecord(value)) return null;
+  const rewardKey = REGION_KEYS.includes(value.rewardKey as RegionKey) ? (value.rewardKey as RegionKey) : REGION_KEYS.includes(value.id as RegionKey) ? (value.id as RegionKey) : null;
+  if (!rewardKey) return null;
   if (typeof value.x !== "number" || !Number.isFinite(value.x) || typeof value.y !== "number" || !Number.isFinite(value.y)) return null;
   return {
-    id: value.id as RegionKey,
+    id: typeof value.id === "string" && /^[a-z0-9-]{1,80}$/i.test(value.id) ? value.id : rewardKey,
+    rewardKey,
     x: clamp(value.x, 4, 96),
     y: clamp(value.y, 7, 92),
     rotation: typeof value.rotation === "number" && Number.isFinite(value.rotation) ? clamp(value.rotation, -180, 180, 0) : 0,
@@ -118,7 +125,7 @@ function asDecoration(value: unknown): DecorationPlacement | null {
 
 function mergeDecorations(value: unknown): DecorationPlacement[] {
   if (!Array.isArray(value)) return [];
-  const seen = new Set<RegionKey>();
+  const seen = new Set<string>();
   return value.reduce<DecorationPlacement[]>((placements, entry) => {
     const placement = asDecoration(entry);
     if (placement && !seen.has(placement.id)) {
@@ -139,6 +146,10 @@ function asSubtitleSettings(value: unknown): SubtitleSettings {
     fontScale: typeof value.fontScale === "number" && Number.isFinite(value.fontScale) ? clamp(value.fontScale, 0.82, 1.36, 2) : DEFAULT_SUBTITLE_SETTINGS.fontScale,
     tone: SUBTITLE_TONES.includes(value.tone as SubtitleTone) ? (value.tone as SubtitleTone) : DEFAULT_SUBTITLE_SETTINGS.tone,
   };
+}
+
+function asSeasonPreset(value: unknown): SeasonPreset | null {
+  return SEASON_PRESETS.includes(value as SeasonPreset) ? (value as SeasonPreset) : null;
 }
 
 export function createMemoryProgress(): MemoryProgress {
@@ -166,13 +177,13 @@ export function mergeMemoryProgress(saved?: Partial<MemoryProgress> | null): Mem
 }
 
 export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot | null {
-  if (!isRecord(value) || ![2, 3, 4, 5].includes(value.version as number) || !Array.isArray(value.plots)) return null;
+  if (!isRecord(value) || ![2, 3, 4, 5, 6].includes(value.version as number) || !Array.isArray(value.plots)) return null;
   const plots = value.plots.map(asPlot).filter((plot): plot is GardenPlot => Boolean(plot));
   if (!plots.length) return null;
   const time: TimeOfDay = value.time === "night" ? "night" : "day";
   const weather: Weather = value.weather === "rain" ? "rain" : "clear";
   return {
-    version: 5,
+    version: 6,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
     time,
     weather,
@@ -187,6 +198,7 @@ export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot 
     decorations: mergeDecorations(value.decorations),
     grid: asGridSettings(value.grid),
     subtitles: asSubtitleSettings(value.subtitles),
+    activeLayoutPreset: asSeasonPreset(value.activeLayoutPreset),
   };
 }
 

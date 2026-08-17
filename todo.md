@@ -25,4 +25,10 @@
 - [x] Tạo lưới căn chỉnh bật/tắt và phản hồi “bám lưới” trên bề mặt khu vườn.
 - [x] Tạo bảng cài đặt nhỏ cho cỡ chữ, màu giấy và màu mực phụ đề.
 - [x] Kiểm thử lưu–khôi phục, tương tác đa thiết bị, khả năng truy cập và build production.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Xác định phạm vi lịch sử Undo/Redo, quy tắc sao chép và bốn preset bố cục theo mùa.
+- [x] Mở rộng lưu tiến trình và sao lưu JSON cho cấu hình preset đang dùng và lịch sử bố cục phiên làm việc.
+- [x] Xây dựng điều khiển Undo/Redo, phím tắt và sao chép hiện vật có phản hồi rõ ràng.
+- [x] Tạo bảng preset Xuân, Hạ, Thu, Đông với bố cục hiện vật và ghi chú riêng.
+- [x] Kiểm thử chuỗi thao tác, sao chép, preset, tải lại trang, responsive và build production.
 - [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.

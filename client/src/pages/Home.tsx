@@ -43,6 +43,7 @@ import {
   type GardenProgressSnapshot,
   type MemoryProgress,
   type RegionKey,
+  type SeasonPreset,
   type SubtitleSettings,
   type TimeOfDay,
   type Weather,
@@ -51,6 +52,7 @@ import {
 type Tab = "garden" | "memory" | "journal";
 type NarrationCue = "intro" | RegionKey;
 type CaptionLine = { start: number; end: number; text: string };
+type LayoutHistory = { past: DecorationPlacement[][]; future: DecorationPlacement[][] };
 
 type AudioNodes = {
   context: AudioContext;
@@ -87,6 +89,19 @@ const CAPTIONS: Record<NarrationCue, CaptionLine[]> = {
   hive: [{ start: 0.4, end: 4.1, text: "Lắng nghe khoảng trống giữa những tiếng vo ve." }, { start: 4.1, end: 7.7, text: "Đó là đường về của tớ." }],
   room: [{ start: 0.4, end: 3.2, text: "Một ngày đã mất không ở ngoài kia." }, { start: 3.2, end: 7.6, text: "Nó đang nằm rải rác trong những thứ cậu đã nhặt." }],
 };
+
+const MAX_LAYOUT_HISTORY = 40;
+
+function copyLayout(placements: DecorationPlacement[]) {
+  return placements.map((placement) => ({ ...placement }));
+}
+
+function layoutsMatch(a: DecorationPlacement[], b: DecorationPlacement[]) {
+  return a.length === b.length && a.every((placement, index) => {
+    const candidate = b[index];
+    return candidate && placement.id === candidate.id && placement.rewardKey === candidate.rewardKey && placement.x === candidate.x && placement.y === candidate.y && placement.rotation === candidate.rotation && placement.scale === candidate.scale;
+  });
+}
 
 const INITIAL_PLOTS: GardenPlot[] = [
   { id: 1, name: "Tulip Kem", state: "bloom", emoji: "✿", note: "Nở đủ nắng." },
@@ -131,11 +146,14 @@ export default function Home() {
   const [decorations, setDecorations] = useState<DecorationPlacement[]>(() => initialProgress.decorations ?? []);
   const [grid, setGrid] = useState<GridSettings>(() => initialProgress.grid ?? DEFAULT_GRID_SETTINGS);
   const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>(() => initialProgress.subtitles ?? DEFAULT_SUBTITLE_SETTINGS);
+  const [activeLayoutPreset, setActiveLayoutPreset] = useState<SeasonPreset | null>(() => initialProgress.activeLayoutPreset ?? null);
   const [doorPanelOpen, setDoorPanelOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const [caption, setCaption] = useState<ActiveCaption | null>(null);
   const audioRef = useRef<AudioNodes | null>(null);
   const narrationRef = useRef<HTMLAudioElement | null>(null);
+  const layoutRef = useRef<DecorationPlacement[]>(copyLayout(initialProgress.decorations ?? []));
+  const layoutHistoryRef = useRef<LayoutHistory>({ past: [], future: [] });
 
   const selected = plots.find((plot) => plot.id === selectedPlot) ?? plots[0];
   const environment = environmentLabel(time, weather);
@@ -151,7 +169,7 @@ export default function Home() {
     [fragmentCount, honey, seeds],
   );
   const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
-    version: 5,
+    version: 6,
     updatedAt: new Date().toISOString(),
     time,
     weather,
@@ -166,7 +184,8 @@ export default function Home() {
     decorations,
     grid,
     subtitles: subtitleSettings,
-  }), [beeBond, butterflySeen, decorations, grid, honey, memoryProgress, plots, seeds, selectedPlot, subtitleSettings, time, water, weather]);
+    activeLayoutPreset,
+  }), [activeLayoutPreset, beeBond, butterflySeen, decorations, grid, honey, memoryProgress, plots, seeds, selectedPlot, subtitleSettings, time, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -401,6 +420,44 @@ export default function Home() {
     setBeeBond((current) => current + 1);
   }
 
+  function commitLayout(next: DecorationPlacement[], preset: SeasonPreset | null = null) {
+    const current = layoutRef.current;
+    if (layoutsMatch(current, next)) return;
+    const history = layoutHistoryRef.current;
+    history.past = [...history.past, copyLayout(current)].slice(-MAX_LAYOUT_HISTORY);
+    history.future = [];
+    const copied = copyLayout(next);
+    layoutRef.current = copied;
+    setDecorations(copied);
+    setActiveLayoutPreset(preset);
+  }
+
+  function undoLayout() {
+    const history = layoutHistoryRef.current;
+    const previous = history.past.at(-1);
+    if (!previous) return;
+    history.past = history.past.slice(0, -1);
+    history.future = [copyLayout(layoutRef.current), ...history.future].slice(0, MAX_LAYOUT_HISTORY);
+    const restored = copyLayout(previous);
+    layoutRef.current = restored;
+    setDecorations(restored);
+    setActiveLayoutPreset(null);
+    toast("Đã hoàn tác một nét sắp đặt", { description: "Khu vườn trở về dấu vết vừa trước đó." });
+  }
+
+  function redoLayout() {
+    const history = layoutHistoryRef.current;
+    const next = history.future.at(0);
+    if (!next) return;
+    history.future = history.future.slice(1);
+    history.past = [...history.past, copyLayout(layoutRef.current)].slice(-MAX_LAYOUT_HISTORY);
+    const restored = copyLayout(next);
+    layoutRef.current = restored;
+    setDecorations(restored);
+    setActiveLayoutPreset(null);
+    toast("Đã làm lại một nét sắp đặt", { description: "Hiện vật trở lại vị trí vừa chọn." });
+  }
+
   function importGardenProgress(snapshot: GardenProgressSnapshot) {
     setTime(snapshot.time);
     setWeather(snapshot.weather);
@@ -413,8 +470,11 @@ export default function Home() {
     setButterflySeen(snapshot.butterflySeen);
     setMemoryProgress(mergeMemoryProgress(snapshot.memory));
     setDecorations(snapshot.decorations);
+    layoutRef.current = copyLayout(snapshot.decorations);
+    layoutHistoryRef.current = { past: [], future: [] };
     setGrid(snapshot.grid);
     setSubtitleSettings(snapshot.subtitles);
+    setActiveLayoutPreset(snapshot.activeLayoutPreset);
   }
 
   return (
@@ -498,7 +558,7 @@ export default function Home() {
                 <div className="bee-flight-trace" aria-hidden="true"><i /><i /><i /></div>
                 <div className="garden-field-note" aria-hidden="true"><span>↳</span><em>vệt phấn: 01</em><small>đất còn ấm</small></div>
                 <div className="pressed-sprig" aria-hidden="true"><i /><i /><i /></div>
-                <GardenDecorations progress={memoryProgress} placements={decorations} grid={grid} onPlacementChange={setDecorations} onGridChange={setGrid} />
+                <GardenDecorations progress={memoryProgress} placements={decorations} grid={grid} activePreset={activeLayoutPreset} canUndo={layoutHistoryRef.current.past.length > 0} canRedo={layoutHistoryRef.current.future.length > 0} onPlacementChange={commitLayout} onGridChange={setGrid} onUndo={undoLayout} onRedo={redoLayout} onApplyPreset={(placements, preset) => { commitLayout(placements, preset); toast("Đã ghim một trang vườn theo mùa", { description: "Bạn luôn có thể hoàn tác để tìm lại bố cục cũ." }); }} />
                 <NarrationCaption caption={caption} settings={subtitleSettings} onDismiss={() => { narrationRef.current?.pause(); setCaption(null); }} />
                 <button className="creature butterfly" onClick={followButterfly} aria-label="Theo Bướm xanh"><span className="butterfly-mark">✧</span><span>Theo Bướm</span></button>
                 <button className="creature bee" onClick={talkToBee} aria-label="Nói chuyện với Ong"><Bug size={22} /><span>Hỏi Ong</span></button>
@@ -530,7 +590,7 @@ export default function Home() {
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
               <MutationGallery />
-              <MemoryRewards progress={memoryProgress} placements={decorations} onPlacementChange={setDecorations} onVisitGarden={() => setActiveTab("garden")} />
+              <MemoryRewards progress={memoryProgress} placements={decorations} onPlacementChange={commitLayout} onVisitGarden={() => setActiveTab("garden")} />
               <article className="journal-entry faint"><div className="entry-date">Chưa có ngày</div><h3>Một trang dính kín bằng sáp mật ong</h3><p>Bạn chưa thể đọc được dòng này. Có vẻ nó cần năm mảnh ký ức.</p><button onClick={inspectDoor} className="text-action">Xem lại cánh cửa <ChevronRight size={14} /></button></article>
               <ProgressArchive snapshot={gardenProgress} onImport={importGardenProgress} />
               <div className="inventory-panel"><div className="inventory-heading"><div><Package size={18} /><span>Túi đồ</span></div><small>{filledSlots.length} / 12 ô</small></div><div className="inventory-grid">{Array.from({ length: 12 }).map((_, index) => { const item = filledSlots[index]; return <div className={`inventory-slot ${item ? item.tone : "empty"}`} key={index}>{item ? <><span>{item.icon}</span><small>{item.amount}</small><em>{item.label}</em></> : <span className="slot-empty">·</span>}</div>; })}</div></div>
