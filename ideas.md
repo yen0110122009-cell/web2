@@ -92,3 +92,10 @@ Logo là **một giọt mật nhỏ chứa đường bay hình xoắn của Ong*
 - Các hành động thực dụng trên bàn sắp đặt phải dùng động từ của sổ tay và khu vườn, ưu tiên **ghim**, **cất**, **trở về**, **gọi tên** và **theo dấu** thay cho ngôn ngữ quản trị phần mềm.
 - Điều hướng, chỉ số và công cụ nhanh phải xuất hiện như **tab sổ, nhãn hạt, dấu sáp hoặc mẩu giấy được ghim**, nhưng vẫn giữ thứ bậc đọc rõ ràng và thao tác bàn phím đầy đủ.
 - Lớp mực đêm của cánh cửa phải có hạt phấn hổ phách, viền giấy và nét thực vật để bí ẩn như được phát hiện bên trong cuốn sổ, thay vì là một mô-đun tối tách biệt.
+
+### Điều chỉnh sau trang ghi chép
+
+- Bộ lọc, sắp xếp và hành động tệp xuất hiện như **nhãn hạt, ghi chú ghim hoặc ngăn kéo giấy**, không phải biểu mẫu trung tính.
+- Một trang ghi chép chính cần khoảng thở và chú thích ở lề; các mục phụ được ghim lệch hoặc dán băng giấy để tránh nhịp lưới đồng đều.
+- Dấu mật, đường bay Ong, nhãn lá ép và phấn hổ phách phải cùng đánh dấu tiến trình, phần thưởng, ký ức và ghi chép quan trọng.
+- Mực đêm luôn có mép giấy ngà, phấn hổ phách và viền thực vật để được đọc như mực thấm từ trong cuốn sổ.

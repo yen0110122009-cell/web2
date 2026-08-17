@@ -19,6 +19,7 @@ type JournalCompanionProps = {
   observations: GardenObservation[];
   specimenKeys: string[];
   openedBeeLetters: string[];
+  isLoading?: boolean;
   onCreateObservation: (draft: ObservationDraft) => void;
   onDeleteObservation: (id: string) => void;
   onPinSpecimen: (key: string) => void;
@@ -37,6 +38,7 @@ export default function JournalCompanion({
   observations,
   specimenKeys,
   openedBeeLetters,
+  isLoading = false,
   onCreateObservation,
   onDeleteObservation,
   onPinSpecimen,
@@ -44,6 +46,9 @@ export default function JournalCompanion({
 }: JournalCompanionProps) {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [topicFilter, setTopicFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "topic">("newest");
   const memoryCount = Object.values(memory).filter((region) => region.status === 3).length;
   const fragmentCount = Object.values(memory).reduce((total, region) => total + region.fragments.length, 0);
   const hasMoonflower = plots.some((plot) => plot.name === "Hoa Mặt Trăng" && (plot.state === "bloom" || plot.state === "mutated"));
@@ -69,6 +74,34 @@ export default function JournalCompanion({
     ? weather === "rain" ? "Mưa đêm đang nói gì với đất?" : "Có điều gì đổi khác khi vườn lên mực đêm?"
     : weather === "rain" ? "Hôm nay, mưa đã để lại dấu vết nào?" : "Bông hoa nào khiến cậu dừng lại lâu nhất?";
 
+  const visibleObservations = useMemo(() => {
+    const now = Date.now();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const filtered = observations.filter((observation) => {
+      const createdAt = new Date(observation.createdAt).getTime();
+      const matchesTopic = topicFilter === "all" || observation.tags.includes(topicFilter);
+      const matchesDate = dateFilter === "all"
+        || (dateFilter === "today" && createdAt >= startOfToday.getTime())
+        || (dateFilter === "week" && createdAt >= now - 7 * 24 * 60 * 60 * 1000);
+      return matchesTopic && matchesDate;
+    });
+
+    return filtered.sort((first, second) => {
+      if (sortOrder === "topic") return first.tags.join(" ").localeCompare(second.tags.join(" "), "vi");
+      const difference = new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+      return sortOrder === "newest" ? difference : -difference;
+    });
+  }, [dateFilter, observations, sortOrder, topicFilter]);
+
+  const hasFilters = topicFilter !== "all" || dateFilter !== "all" || sortOrder !== "newest";
+
+  function resetFilters() {
+    setTopicFilter("all");
+    setDateFilter("all");
+    setSortOrder("newest");
+  }
+
   function submitObservation() {
     const normalizedTitle = title.trim();
     const normalizedNote = note.trim();
@@ -76,6 +109,18 @@ export default function JournalCompanion({
     onCreateObservation({ title: normalizedTitle, note: normalizedNote, tags: [time === "night" ? "Mực đêm" : "Ngày trong", weather === "rain" ? "Mưa" : "Đất ấm"] });
     setTitle("");
     setNote("");
+  }
+
+  if (isLoading) {
+    return (
+      <section className="journal-loading-sheet" aria-live="polite" aria-label="Đang mở Sổ tay Mật Ong">
+        <div className="loading-bee" aria-hidden="true"><i /><i /><b>•</b></div>
+        <p className="eyebrow">Ong đang mở sổ</p>
+        <h3>Đang nhặt lại những nét bút chì…</h3>
+        <div className="loading-lines" aria-hidden="true"><span /><span /><span /></div>
+        <p className="loading-note">Các trang đã tự lưu sẽ trở lại ngay thôi.</p>
+      </section>
+    );
   }
 
   return (
@@ -103,14 +148,23 @@ export default function JournalCompanion({
               <button className="journal-save-button" onClick={submitObservation} disabled={!title.trim() || !note.trim()}><Plus size={16} /> Ghép vào trang hôm nay</button>
             </div>
           </div>
+          <div className="observation-controls" aria-label="Lọc và sắp xếp ghi chép">
+            <div className="control-note"><span>ĐƯỜNG DẪN TRÊN MÉP TRANG</span><b>{visibleObservations.length} / {observations.length || 0} ghi chép</b></div>
+            <div className="observation-selects">
+              <label>Chủ đề<select value={topicFilter} onChange={(event) => setTopicFilter(event.target.value)}><option value="all">Mọi dấu vết</option><option value="Ngày trong">Ngày trong</option><option value="Mực đêm">Mực đêm</option><option value="Mưa">Mưa</option><option value="Đất ấm">Đất ấm</option></select></label>
+              <label>Ngày tháng<select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="all">Mọi ngày</option><option value="today">Hôm nay</option><option value="week">7 ngày gần đây</option></select></label>
+              <label>Sắp xếp<select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "newest" | "oldest" | "topic")}><option value="newest">Mới ghi trước</option><option value="oldest">Cũ ghi trước</option><option value="topic">Theo chủ đề</option></select></label>
+              <button type="button" className="clear-observation-filters" onClick={resetFilters} disabled={!hasFilters}>Gỡ lọc</button>
+            </div>
+          </div>
           <div className="observation-ledger" aria-live="polite">
-            {observations.length ? [...observations].reverse().map((observation) => (
+            {observations.length && visibleObservations.length ? visibleObservations.map((observation) => (
               <article className="observation-slip" key={observation.id}>
                 <div className="slip-pin" aria-hidden="true" /><div className="slip-meta">{formatDay(observation.createdAt)} · {observation.time === "night" ? "Đêm" : "Ngày"} · {observation.weather === "rain" ? "Mưa" : "Trong"}</div>
                 <h4>{observation.title}</h4><p>{observation.note}</p>
                 <div className="slip-foot"><div>{observation.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><button onClick={() => onDeleteObservation(observation.id)} aria-label={`Gỡ ghi chép ${observation.title}`}><Trash2 size={14} /></button></div>
               </article>
-            )) : <div className="journal-empty"><BookMarked size={21} /><p>Trang này đang chờ một điều rất nhỏ mà chỉ bạn để ý.</p></div>}
+            )) : observations.length ? <div className="journal-empty journal-empty-filter"><BookMarked size={21} /><p>Ong chưa tìm thấy ghi chép nào theo đường dẫn này.</p><button type="button" onClick={resetFilters}>Gỡ bộ lọc để xem lại tất cả</button></div> : <div className="journal-empty"><BookMarked size={21} /><p>Trang này đang chờ một điều rất nhỏ mà chỉ bạn để ý.</p></div>}
           </div>
         </TabsContent>
 

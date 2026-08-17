@@ -165,6 +165,7 @@ export default function Home() {
     const requested = new URLSearchParams(window.location.search).get("view");
     return requested === "memory" || requested === "journal" ? requested : "garden";
   });
+  const [journalLoading, setJournalLoading] = useState(() => activeTab === "journal");
   const [time, setTime] = useState<TimeOfDay>(() => initialProgress.time ?? "day");
   const [weather, setWeather] = useState<Weather>(() => initialProgress.weather ?? "clear");
   const [plots, setPlots] = useState<GardenPlot[]>(() => initialProgress.plots?.length ? initialProgress.plots : INITIAL_PLOTS);
@@ -356,6 +357,16 @@ export default function Home() {
   useEffect(() => {
     if (soundOn) updateAudioScene();
   }, [soundOn, time, weather]);
+
+  useEffect(() => {
+    if (activeTab !== "journal") {
+      setJournalLoading(false);
+      return;
+    }
+    setJournalLoading(true);
+    const timer = window.setTimeout(() => setJournalLoading(false), 520);
+    return () => window.clearTimeout(timer);
+  }, [activeTab]);
 
   useEffect(() => {
     return () => stopAudio();
@@ -727,7 +738,7 @@ export default function Home() {
           {activeTab === "journal" && (
             <div className="journal-view">
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
-              <JournalCompanion time={time} weather={weather} plots={plots} memory={memoryProgress} butterflySeen={butterflySeen} beeBond={beeBond} observations={observations} specimenKeys={specimenKeys} openedBeeLetters={openedBeeLetters} onCreateObservation={createObservation} onDeleteObservation={deleteObservation} onPinSpecimen={pinSpecimen} onOpenLetter={openBeeLetter} />
+              <JournalCompanion time={time} weather={weather} plots={plots} memory={memoryProgress} butterflySeen={butterflySeen} beeBond={beeBond} observations={observations} specimenKeys={specimenKeys} openedBeeLetters={openedBeeLetters} isLoading={journalLoading} onCreateObservation={createObservation} onDeleteObservation={deleteObservation} onPinSpecimen={pinSpecimen} onOpenLetter={openBeeLetter} />
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
               <MutationGallery />
               <MemoryRewards progress={memoryProgress} placements={decorations} onPlacementChange={commitLayout} onVisitGarden={() => setActiveTab("garden")} />
