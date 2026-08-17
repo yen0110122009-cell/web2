@@ -38,4 +38,4 @@
 - [x] Xây dựng xóa hiện vật, mở thùng giấy tái chế và khôi phục hiện vật về vị trí cũ.
 - [x] Xây dựng lưu, đổi tên, áp dụng và xóa preset bố cục cá nhân.
 - [x] Kiểm thử thao tác xóa–khôi phục, preset, lưu–nhập dữ liệu, responsive và build production.
-- [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
