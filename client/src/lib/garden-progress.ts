@@ -46,6 +46,16 @@ export type PersonalPreset = {
   placements: DecorationPlacement[];
 };
 
+export type GardenObservation = {
+  id: string;
+  createdAt: string;
+  time: TimeOfDay;
+  weather: Weather;
+  title: string;
+  note: string;
+  tags: string[];
+};
+
 export type GridSettings = {
   enabled: boolean;
   size: 8;
@@ -60,7 +70,7 @@ export const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 8 };
 export const DEFAULT_SUBTITLE_SETTINGS: SubtitleSettings = { fontScale: 1, tone: "honey" };
 
 export type GardenProgressSnapshot = {
-  version: 7;
+  version: 8;
   updatedAt: string;
   time: TimeOfDay;
   weather: Weather;
@@ -75,6 +85,9 @@ export type GardenProgressSnapshot = {
   decorations: DecorationPlacement[];
   trash: TrashedDecoration[];
   personalPresets: PersonalPreset[];
+  observations: GardenObservation[];
+  specimenKeys: string[];
+  openedBeeLetters: string[];
   grid: GridSettings;
   subtitles: SubtitleSettings;
   activeLayoutPreset: SeasonPreset | null;
@@ -87,11 +100,13 @@ type BackupEnvelope = {
   progress: GardenProgressSnapshot;
 };
 
-export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v7";
-const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v6", "vuon-nho-cua-ong:progress:v5", "vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
+export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v8";
+const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v7", "vuon-nho-cua-ong:progress:v6", "vuon-nho-cua-ong:progress:v5", "vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
 const MAX_BACKUP_SIZE = 1_000_000;
 const MAX_TRASH_ITEMS = 20;
 const MAX_PERSONAL_PRESETS = 10;
+const MAX_OBSERVATIONS = 24;
+const MAX_COLLECTION_KEYS = 24;
 const REGION_KEYS: RegionKey[] = ["porch", "seed", "lake", "hive", "room"];
 const PLANT_STATES: PlantState[] = ["empty", "seed", "thirsty", "bloom", "mutated"];
 const SUBTITLE_TONES: SubtitleTone[] = ["honey", "moss", "ink"];
@@ -201,6 +216,52 @@ function mergePersonalPresets(value: unknown): PersonalPreset[] {
   return sanitized.slice(-MAX_PERSONAL_PRESETS);
 }
 
+function asGardenObservation(value: unknown): GardenObservation | null {
+  if (!isRecord(value)) return null;
+  const id = typeof value.id === "string" && /^[a-z0-9-]{1,80}$/i.test(value.id) ? value.id : null;
+  const title = asString(value.title).trim().slice(0, 64);
+  const note = asString(value.note).trim().slice(0, 360);
+  if (!id || !title || !note) return null;
+  const tags = Array.isArray(value.tags)
+    ? value.tags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim().slice(0, 24)).filter(Boolean).slice(0, 4)
+    : [];
+  return {
+    id,
+    createdAt: typeof value.createdAt === "string" && !Number.isNaN(Date.parse(value.createdAt)) ? value.createdAt : new Date().toISOString(),
+    time: value.time === "night" ? "night" : "day",
+    weather: value.weather === "rain" ? "rain" : "clear",
+    title,
+    note,
+    tags,
+  };
+}
+
+function mergeObservations(value: unknown): GardenObservation[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const sanitized = value.reduce<GardenObservation[]>((observations, entry) => {
+    const observation = asGardenObservation(entry);
+    if (observation && !seen.has(observation.id)) {
+      seen.add(observation.id);
+      observations.push(observation);
+    }
+    return observations;
+  }, []);
+  return sanitized.slice(-MAX_OBSERVATIONS);
+}
+
+function mergeCollectionKeys(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  return value.reduce<string[]>((keys, entry) => {
+    if (typeof entry === "string" && /^[a-z0-9-]{1,80}$/i.test(entry) && !seen.has(entry)) {
+      seen.add(entry);
+      keys.push(entry);
+    }
+    return keys;
+  }, []).slice(-MAX_COLLECTION_KEYS);
+}
+
 function asGridSettings(value: unknown): GridSettings {
   return { enabled: isRecord(value) && value.enabled === true, size: 8 };
 }
@@ -242,13 +303,13 @@ export function mergeMemoryProgress(saved?: Partial<MemoryProgress> | null): Mem
 }
 
 export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot | null {
-  if (!isRecord(value) || ![2, 3, 4, 5, 6, 7].includes(value.version as number) || !Array.isArray(value.plots)) return null;
+  if (!isRecord(value) || ![2, 3, 4, 5, 6, 7, 8].includes(value.version as number) || !Array.isArray(value.plots)) return null;
   const plots = value.plots.map(asPlot).filter((plot): plot is GardenPlot => Boolean(plot));
   if (!plots.length) return null;
   const time: TimeOfDay = value.time === "night" ? "night" : "day";
   const weather: Weather = value.weather === "rain" ? "rain" : "clear";
   return {
-    version: 7,
+    version: 8,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
     time,
     weather,
@@ -263,6 +324,9 @@ export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot 
     decorations: mergeDecorations(value.decorations),
     trash: mergeTrash(value.trash),
     personalPresets: mergePersonalPresets(value.personalPresets),
+    observations: mergeObservations(value.observations),
+    specimenKeys: mergeCollectionKeys(value.specimenKeys),
+    openedBeeLetters: mergeCollectionKeys(value.openedBeeLetters),
     grid: asGridSettings(value.grid),
     subtitles: asSubtitleSettings(value.subtitles),
     activeLayoutPreset: asSeasonPreset(value.activeLayoutPreset),

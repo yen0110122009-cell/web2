@@ -39,3 +39,10 @@
 - [x] Xây dựng lưu, đổi tên, áp dụng và xóa preset bố cục cá nhân.
 - [x] Kiểm thử thao tác xóa–khôi phục, preset, lưu–nhập dữ liệu, responsive và build production.
 - [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Xác định nội dung, điều kiện mở khóa và giới hạn dữ liệu cho Trang quan sát, Album mẫu vật và Thư của Ong.
+- [x] Nâng schema tiến trình và sao lưu JSON cho các ghi chép, mẫu vật và thư đã mở.
+- [x] Xây dựng Trang quan sát hằng ngày với ghi nhận thời tiết, cây và phát hiện của Ong.
+- [x] Xây dựng Album mẫu vật để lưu, mở khóa và xem các hạt, dấu vết cùng mảnh ký ức.
+- [x] Xây dựng Thư của Ong với thư mở dần theo tình trạng khu vườn và các dấu ấn ký ức.
+- [x] Kiểm thử thao tác tạo ghi chép, lưu–khôi phục, responsive và build production.
+- [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.

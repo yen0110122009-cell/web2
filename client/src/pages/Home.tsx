@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import MemoryAtlas from "@/components/MemoryAtlas";
 import MutationGallery from "@/components/MutationGallery";
 import ProgressArchive from "@/components/ProgressArchive";
+import JournalCompanion from "@/components/JournalCompanion";
 import { GardenDecorations, MemoryRewards } from "@/components/MemoryRewards";
 import { CaptionSettingsPanel, NarrationCaption, type ActiveCaption } from "@/components/NarrationCaption";
 import {
@@ -38,6 +39,7 @@ import {
   mergeMemoryProgress,
   saveGardenProgress,
   type DecorationPlacement,
+  type GardenObservation,
   type GridSettings,
   type GardenPlot,
   type GardenProgressSnapshot,
@@ -158,7 +160,11 @@ function stateLabel(state: GardenPlot["state"]) {
 
 export default function Home() {
   const [initialProgress] = useState(loadGardenProgress);
-  const [activeTab, setActiveTab] = useState<Tab>("garden");
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "garden";
+    const requested = new URLSearchParams(window.location.search).get("view");
+    return requested === "memory" || requested === "journal" ? requested : "garden";
+  });
   const [time, setTime] = useState<TimeOfDay>(() => initialProgress.time ?? "day");
   const [weather, setWeather] = useState<Weather>(() => initialProgress.weather ?? "clear");
   const [plots, setPlots] = useState<GardenPlot[]>(() => initialProgress.plots?.length ? initialProgress.plots : INITIAL_PLOTS);
@@ -172,6 +178,9 @@ export default function Home() {
   const [decorations, setDecorations] = useState<DecorationPlacement[]>(() => initialProgress.decorations ?? []);
   const [trash, setTrash] = useState<TrashedDecoration[]>(() => initialProgress.trash ?? []);
   const [personalPresets, setPersonalPresets] = useState<PersonalPreset[]>(() => initialProgress.personalPresets ?? []);
+  const [observations, setObservations] = useState<GardenObservation[]>(() => initialProgress.observations ?? []);
+  const [specimenKeys, setSpecimenKeys] = useState<string[]>(() => initialProgress.specimenKeys ?? []);
+  const [openedBeeLetters, setOpenedBeeLetters] = useState<string[]>(() => initialProgress.openedBeeLetters ?? []);
   const [grid, setGrid] = useState<GridSettings>(() => initialProgress.grid ?? DEFAULT_GRID_SETTINGS);
   const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>(() => initialProgress.subtitles ?? DEFAULT_SUBTITLE_SETTINGS);
   const [activeLayoutPreset, setActiveLayoutPreset] = useState<SeasonPreset | null>(() => initialProgress.activeLayoutPreset ?? null);
@@ -198,7 +207,7 @@ export default function Home() {
     [fragmentCount, honey, seeds],
   );
   const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
-    version: 7,
+    version: 8,
     updatedAt: new Date().toISOString(),
     time,
     weather,
@@ -213,10 +222,13 @@ export default function Home() {
     decorations,
     trash,
     personalPresets,
+    observations,
+    specimenKeys,
+    openedBeeLetters,
     grid,
     subtitles: subtitleSettings,
     activeLayoutPreset,
-  }), [activeLayoutPreset, beeBond, butterflySeen, decorations, grid, honey, memoryProgress, personalPresets, plots, seeds, selectedPlot, subtitleSettings, time, trash, water, weather]);
+  }), [activeLayoutPreset, beeBond, butterflySeen, decorations, grid, honey, memoryProgress, observations, openedBeeLetters, personalPresets, plots, seeds, selectedPlot, specimenKeys, subtitleSettings, time, trash, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -513,6 +525,9 @@ export default function Home() {
     setDecorations(snapshot.decorations);
     setTrash(snapshot.trash);
     setPersonalPresets(snapshot.personalPresets);
+    setObservations(snapshot.observations);
+    setSpecimenKeys(snapshot.specimenKeys);
+    setOpenedBeeLetters(snapshot.openedBeeLetters);
     layoutRef.current = copyLayout(snapshot.decorations);
     trashRef.current = copyTrash(snapshot.trash);
     layoutHistoryRef.current = { past: [], future: [] };
@@ -566,6 +581,39 @@ export default function Home() {
   function deletePersonalPreset(id: string) {
     setPersonalPresets((current) => current.filter((preset) => preset.id !== id));
     toast("Trang bố cục đã được gỡ khỏi sổ", { description: "Bố cục đang dùng trong khu vườn không thay đổi." });
+  }
+
+  function createObservation(draft: Pick<GardenObservation, "title" | "note" | "tags">) {
+    const entry: GardenObservation = {
+      id: `observation-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      time,
+      weather,
+      title: draft.title.trim().slice(0, 64),
+      note: draft.note.trim().slice(0, 360),
+      tags: draft.tags.slice(0, 4),
+    };
+    if (!entry.title || !entry.note) return;
+    setObservations((current) => [...current, entry].slice(-24));
+    playChime("soft");
+    toast("Đã ghép một ghi chép vào sổ", { description: "Ong sẽ giữ điều này trong phần lề của khu vườn." });
+  }
+
+  function deleteObservation(id: string) {
+    setObservations((current) => current.filter((observation) => observation.id !== id));
+    toast("Đã gỡ một ghi chép", { description: "Khu vườn không giận đâu; đôi khi một trang trống cũng cần thiết." });
+  }
+
+  function pinSpecimen(key: string) {
+    setSpecimenKeys((current) => current.includes(key) ? current : [...current, key].slice(-24));
+    playChime("magic");
+    toast("Mẫu vật đã được ghim", { description: "Nó nằm yên trong album, nhưng vẫn biết kể chuyện khi bạn nhìn kỹ." });
+  }
+
+  function openBeeLetter(key: string) {
+    setOpenedBeeLetters((current) => current.includes(key) ? current : [...current, key].slice(-24));
+    playChime("soft");
+    toast("Ong vừa mở một lá thư", { description: "Có vài câu chỉ nên đọc trong lúc khu vườn thật yên." });
   }
 
   return (
@@ -679,6 +727,7 @@ export default function Home() {
           {activeTab === "journal" && (
             <div className="journal-view">
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
+              <JournalCompanion time={time} weather={weather} plots={plots} memory={memoryProgress} butterflySeen={butterflySeen} beeBond={beeBond} observations={observations} specimenKeys={specimenKeys} openedBeeLetters={openedBeeLetters} onCreateObservation={createObservation} onDeleteObservation={deleteObservation} onPinSpecimen={pinSpecimen} onOpenLetter={openBeeLetter} />
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
               <MutationGallery />
               <MemoryRewards progress={memoryProgress} placements={decorations} onPlacementChange={commitLayout} onVisitGarden={() => setActiveTab("garden")} />
