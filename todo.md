@@ -55,3 +55,6 @@
 - [x] Xây dựng lọc, sắp xếp và trạng thái rỗng cho các bài ghi chép.
 - [x] Kiểm thử desktop/mobile, TypeScript và build production.
 - [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [ ] Kiểm tra cấu hình hiện tại của kho GitHub và nguyên nhân chưa xem trực tiếp được website.
+- [ ] Thiết lập build, đường dẫn tài nguyên và quy trình xuất bản GitHub Pages cho Vite.
+- [ ] Xác minh trang GitHub Pages, đồng bộ mã nguồn và lưu checkpoint.

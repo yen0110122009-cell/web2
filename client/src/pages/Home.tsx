@@ -29,6 +29,7 @@ import MemoryAtlas from "@/components/MemoryAtlas";
 import MutationGallery from "@/components/MutationGallery";
 import ProgressArchive from "@/components/ProgressArchive";
 import JournalCompanion from "@/components/JournalCompanion";
+import { gardenAsset } from "@/lib/public-assets";
 import { GardenDecorations, MemoryRewards } from "@/components/MemoryRewards";
 import { CaptionSettingsPanel, NarrationCaption, type ActiveCaption } from "@/components/NarrationCaption";
 import {
@@ -69,20 +70,20 @@ type AudioNodes = {
 };
 
 const ASSETS = {
-  hero: "/manus-storage/bee-garden-hero_b09f9024.jpg",
-  door: "/manus-storage/bee-garden-door_d64609f8.jpg",
-  memoryMap: "/manus-storage/bee-garden-memory-map_12eb8907.jpg",
-  butterfly: "/manus-storage/bee-garden-butterfly_e49f3bac.jpg",
-  logo: "/manus-storage/bee-garden-logo_ac8c5c49.png",
+  hero: gardenAsset("bee-garden-hero_b09f9024.jpg"),
+  door: gardenAsset("bee-garden-door_d64609f8.jpg"),
+  memoryMap: gardenAsset("bee-garden-memory-map_12eb8907.jpg"),
+  butterfly: gardenAsset("bee-garden-butterfly_e49f3bac.jpg"),
+  logo: gardenAsset("bee-garden-logo_ac8c5c49.png"),
 };
 
 const NARRATIONS: Record<NarrationCue, string> = {
-  intro: "/manus-storage/ong-garden-intro_816a1f21.wav",
-  porch: "/manus-storage/ong-memory-porch_79a6b8d9.wav",
-  seed: "/manus-storage/ong-memory-seed_c97014c1.wav",
-  lake: "/manus-storage/ong-memory-pond_5685f11b.wav",
-  hive: "/manus-storage/ong-memory-hive_7fcb5af4.wav",
-  room: "/manus-storage/ong-memory-room_d65dfa19.wav",
+  intro: gardenAsset("ong-garden-intro_816a1f21.wav"),
+  porch: gardenAsset("ong-memory-porch_79a6b8d9.wav"),
+  seed: gardenAsset("ong-memory-seed_c97014c1.wav"),
+  lake: gardenAsset("ong-memory-pond_5685f11b.wav"),
+  hive: gardenAsset("ong-memory-hive_7fcb5af4.wav"),
+  room: gardenAsset("ong-memory-room_d65dfa19.wav"),
 };
 
 const CAPTION_LABELS: Record<NarrationCue, string> = { intro: "Lời mở đầu", porch: "Hiên Mật Ong", seed: "Vườn Hạt Cuối", lake: "Hồ Phản Chiếu", hive: "Tổ Ong Rỗng", room: "Phòng Không Tường" };

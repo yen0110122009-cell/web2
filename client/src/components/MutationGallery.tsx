@@ -4,14 +4,15 @@
  */
 import { useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
+import { gardenAsset } from "@/lib/public-assets";
 import "./mutation-gallery.css";
 
 const MUTATIONS = [
-  { id: "moon-tulip", name: "Tulip Ánh Trăng", condition: "Đêm trong · một lượt tưới", cue: "Cánh hoa giữ lại ánh trăng như một giọt nước.", image: "/manus-storage/mutation-moon-tulip_2246502f.jpg", className: "moon" },
-  { id: "star-sunflower", name: "Hướng Dương Sao", condition: "Mưa đêm · may mắn", cue: "Nhị hoa phát sáng khi Ong bay ba vòng.", image: "/manus-storage/mutation-star-sunflower_be2ec40d.jpg", className: "star" },
-  { id: "rain-rose", name: "Hoa Hồng Mưa", condition: "Mưa ngày · phấn hoa", cue: "Mỗi giọt mưa giữ một màu khác nhau trong cánh.", image: "/manus-storage/mutation-rain-rose_1bc8a434.jpg", className: "rain" },
-  { id: "inverted-clover", name: "Cỏ Ba Lá Ngược", condition: "Đất mới · bướm xanh", cue: "Ba lá cùng ngước lên, như đang lắng nghe đất thở.", image: "/manus-storage/mutation-inverted-clover_7d21da73.jpg", className: "clover" },
-  { id: "nameless-seed", name: "Cây Không Tên", condition: "Mưa đêm · chờ một nhịp", cue: "Nó không biến đổi; nó thôi giả vờ là bình thường.", image: "/manus-storage/mutation-herbarium-reference_dc0c607d.jpg", className: "nameless" },
+  { id: "moon-tulip", name: "Tulip Ánh Trăng", condition: "Đêm trong · một lượt tưới", cue: "Cánh hoa giữ lại ánh trăng như một giọt nước.", image: gardenAsset("mutation-moon-tulip_2246502f.jpg"), className: "moon" },
+  { id: "star-sunflower", name: "Hướng Dương Sao", condition: "Mưa đêm · may mắn", cue: "Nhị hoa phát sáng khi Ong bay ba vòng.", image: gardenAsset("mutation-star-sunflower_be2ec40d.jpg"), className: "star" },
+  { id: "rain-rose", name: "Hoa Hồng Mưa", condition: "Mưa ngày · phấn hoa", cue: "Mỗi giọt mưa giữ một màu khác nhau trong cánh.", image: gardenAsset("mutation-rain-rose_1bc8a434.jpg"), className: "rain" },
+  { id: "inverted-clover", name: "Cỏ Ba Lá Ngược", condition: "Đất mới · bướm xanh", cue: "Ba lá cùng ngước lên, như đang lắng nghe đất thở.", image: gardenAsset("mutation-inverted-clover_7d21da73.jpg"), className: "clover" },
+  { id: "nameless-seed", name: "Cây Không Tên", condition: "Mưa đêm · chờ một nhịp", cue: "Nó không biến đổi; nó thôi giả vờ là bình thường.", image: gardenAsset("mutation-herbarium-reference_dc0c607d.jpg"), className: "nameless" },
 ];
 
 export default function MutationGallery() {
