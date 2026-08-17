@@ -58,6 +58,6 @@
 - [x] Kiểm tra cấu hình hiện tại của kho GitHub và nguyên nhân chưa xem trực tiếp được website.
 - [x] Thiết lập build, đường dẫn tài nguyên và quy trình xuất bản GitHub Pages cho Vite.
 - [x] Xác minh trang GitHub Pages, đồng bộ mã nguồn và lưu checkpoint.
-- [ ] Chẩn đoán lỗi nạp font chữ và lời dẫn âm thanh trên GitHub Pages.
-- [ ] Sửa đường dẫn, fallback và cơ chế phát âm thanh tương thích với Pages.
+- [x] Chẩn đoán lỗi nạp font chữ và lời dẫn âm thanh trên GitHub Pages.
+- [x] Sửa đường dẫn, fallback và cơ chế phát âm thanh tương thích với Pages.
 - [ ] Kiểm tra công khai, đồng bộ GitHub và lưu checkpoint cho bản sửa.
