@@ -49,3 +49,9 @@
 - [x] Đối chiếu các tệp index giữa dự án và kho GitHub để xác định tệp bị đồng bộ sai.
 - [x] Sửa tệp index đúng cho ứng dụng React, kiểm tra build và xác nhận nội dung kho GitHub.
 - [x] Lưu checkpoint và đồng bộ bản sửa index lên GitHub.
+- [x] Xác định ngữ cảnh hiển thị, thời lượng và hành vi giảm chuyển động cho hiệu ứng tải Nhật ký Mật Ong.
+- [x] Thiết kế bộ lọc chủ đề và sắp xếp ngày tháng phù hợp với ghi chép hiện có.
+- [x] Xây dựng lớp tải trang và trạng thái tải nội dung nhật ký.
+- [x] Xây dựng lọc, sắp xếp và trạng thái rỗng cho các bài ghi chép.
+- [x] Kiểm thử desktop/mobile, TypeScript và build production.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
