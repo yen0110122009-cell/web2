@@ -46,3 +46,6 @@
 - [x] Xây dựng Thư của Ong với thư mở dần theo tình trạng khu vườn và các dấu ấn ký ức.
 - [x] Kiểm thử thao tác tạo ghi chép, lưu–khôi phục, responsive và build production.
 - [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Đối chiếu các tệp index giữa dự án và kho GitHub để xác định tệp bị đồng bộ sai.
+- [x] Sửa tệp index đúng cho ứng dụng React, kiểm tra build và xác nhận nội dung kho GitHub.
+- [ ] Lưu checkpoint và đồng bộ bản sửa index lên GitHub.
