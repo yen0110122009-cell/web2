@@ -86,3 +86,9 @@ Logo là **một giọt mật nhỏ chứa đường bay hình xoắn của Ong*
 - Điều khiển thực dụng phải mượn hình thái **tab sổ tay, tem sáp, nhãn hạt giống, kẹp giấy hoặc băng giấy**; không dùng pill trung tính kiểu ứng dụng SaaS.
 - Hình khu vườn luôn có lớp **mũi tên mực, đường bay Ong, chú thích thực địa, vết ép lá hoặc khung giấy mòn** để giữ cảm giác trang mẫu vật sống.
 - Mặt bí ẩn được nối vào hệ giấy ivory bằng **mực đêm thấm viền, bụi phấn hổ phách và gờ thực vật**, không đứng tách rời như mô-đun dark mode.
+
+### Ghi chú sau lượt rà soát bàn sắp đặt
+
+- Các hành động thực dụng trên bàn sắp đặt phải dùng động từ của sổ tay và khu vườn, ưu tiên **ghim**, **cất**, **trở về**, **gọi tên** và **theo dấu** thay cho ngôn ngữ quản trị phần mềm.
+- Điều hướng, chỉ số và công cụ nhanh phải xuất hiện như **tab sổ, nhãn hạt, dấu sáp hoặc mẩu giấy được ghim**, nhưng vẫn giữ thứ bậc đọc rõ ràng và thao tác bàn phím đầy đủ.
+- Lớp mực đêm của cánh cửa phải có hạt phấn hổ phách, viền giấy và nét thực vật để bí ẩn như được phát hiện bên trong cuốn sổ, thay vì là một mô-đun tối tách biệt.

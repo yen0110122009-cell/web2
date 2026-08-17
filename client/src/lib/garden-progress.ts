@@ -35,6 +35,17 @@ export type DecorationPlacement = {
   scale: number;
 };
 
+export type TrashedDecoration = DecorationPlacement & {
+  trashedAt: string;
+};
+
+export type PersonalPreset = {
+  id: string;
+  name: string;
+  createdAt: string;
+  placements: DecorationPlacement[];
+};
+
 export type GridSettings = {
   enabled: boolean;
   size: 8;
@@ -49,7 +60,7 @@ export const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 8 };
 export const DEFAULT_SUBTITLE_SETTINGS: SubtitleSettings = { fontScale: 1, tone: "honey" };
 
 export type GardenProgressSnapshot = {
-  version: 6;
+  version: 7;
   updatedAt: string;
   time: TimeOfDay;
   weather: Weather;
@@ -62,6 +73,8 @@ export type GardenProgressSnapshot = {
   butterflySeen: boolean;
   memory: MemoryProgress;
   decorations: DecorationPlacement[];
+  trash: TrashedDecoration[];
+  personalPresets: PersonalPreset[];
   grid: GridSettings;
   subtitles: SubtitleSettings;
   activeLayoutPreset: SeasonPreset | null;
@@ -74,9 +87,11 @@ type BackupEnvelope = {
   progress: GardenProgressSnapshot;
 };
 
-export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v6";
-const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v5", "vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
+export const GARDEN_PROGRESS_KEY = "vuon-nho-cua-ong:progress:v7";
+const LEGACY_PROGRESS_KEYS = ["vuon-nho-cua-ong:progress:v6", "vuon-nho-cua-ong:progress:v5", "vuon-nho-cua-ong:progress:v4", "vuon-nho-cua-ong:progress:v3", "vuon-nho-cua-ong:progress:v2"];
 const MAX_BACKUP_SIZE = 1_000_000;
+const MAX_TRASH_ITEMS = 20;
+const MAX_PERSONAL_PRESETS = 10;
 const REGION_KEYS: RegionKey[] = ["porch", "seed", "lake", "hive", "room"];
 const PLANT_STATES: PlantState[] = ["empty", "seed", "thirsty", "bloom", "mutated"];
 const SUBTITLE_TONES: SubtitleTone[] = ["honey", "moss", "ink"];
@@ -136,6 +151,56 @@ function mergeDecorations(value: unknown): DecorationPlacement[] {
   }, []);
 }
 
+function asTrashedDecoration(value: unknown): TrashedDecoration | null {
+  const decoration = asDecoration(value);
+  if (!decoration || !isRecord(value)) return null;
+  return {
+    ...decoration,
+    trashedAt: typeof value.trashedAt === "string" && !Number.isNaN(Date.parse(value.trashedAt)) ? value.trashedAt : new Date().toISOString(),
+  };
+}
+
+function mergeTrash(value: unknown): TrashedDecoration[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const sanitized = value.reduce<TrashedDecoration[]>((items, entry) => {
+    const decoration = asTrashedDecoration(entry);
+    if (decoration && !seen.has(decoration.id)) {
+      seen.add(decoration.id);
+      items.push(decoration);
+    }
+    return items;
+  }, []);
+  return sanitized.slice(-MAX_TRASH_ITEMS);
+}
+
+function asPersonalPreset(value: unknown): PersonalPreset | null {
+  if (!isRecord(value)) return null;
+  const id = typeof value.id === "string" && /^[a-z0-9-]{1,80}$/i.test(value.id) ? value.id : null;
+  const name = asString(value.name).trim().slice(0, 42);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    createdAt: typeof value.createdAt === "string" && !Number.isNaN(Date.parse(value.createdAt)) ? value.createdAt : new Date().toISOString(),
+    placements: mergeDecorations(value.placements),
+  };
+}
+
+function mergePersonalPresets(value: unknown): PersonalPreset[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const sanitized = value.reduce<PersonalPreset[]>((presets, entry) => {
+    const preset = asPersonalPreset(entry);
+    if (preset && !seen.has(preset.id)) {
+      seen.add(preset.id);
+      presets.push(preset);
+    }
+    return presets;
+  }, []);
+  return sanitized.slice(-MAX_PERSONAL_PRESETS);
+}
+
 function asGridSettings(value: unknown): GridSettings {
   return { enabled: isRecord(value) && value.enabled === true, size: 8 };
 }
@@ -177,13 +242,13 @@ export function mergeMemoryProgress(saved?: Partial<MemoryProgress> | null): Mem
 }
 
 export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot | null {
-  if (!isRecord(value) || ![2, 3, 4, 5, 6].includes(value.version as number) || !Array.isArray(value.plots)) return null;
+  if (!isRecord(value) || ![2, 3, 4, 5, 6, 7].includes(value.version as number) || !Array.isArray(value.plots)) return null;
   const plots = value.plots.map(asPlot).filter((plot): plot is GardenPlot => Boolean(plot));
   if (!plots.length) return null;
   const time: TimeOfDay = value.time === "night" ? "night" : "day";
   const weather: Weather = value.weather === "rain" ? "rain" : "clear";
   return {
-    version: 6,
+    version: 7,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
     time,
     weather,
@@ -196,6 +261,8 @@ export function normalizeGardenProgress(value: unknown): GardenProgressSnapshot 
     butterflySeen: value.butterflySeen === true,
     memory: mergeMemoryProgress(isRecord(value.memory) ? (value.memory as Partial<MemoryProgress>) : undefined),
     decorations: mergeDecorations(value.decorations),
+    trash: mergeTrash(value.trash),
+    personalPresets: mergePersonalPresets(value.personalPresets),
     grid: asGridSettings(value.grid),
     subtitles: asSubtitleSettings(value.subtitles),
     activeLayoutPreset: asSeasonPreset(value.activeLayoutPreset),

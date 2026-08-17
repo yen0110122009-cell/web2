@@ -42,17 +42,20 @@ import {
   type GardenPlot,
   type GardenProgressSnapshot,
   type MemoryProgress,
+  type PersonalPreset,
   type RegionKey,
   type SeasonPreset,
   type SubtitleSettings,
   type TimeOfDay,
+  type TrashedDecoration,
   type Weather,
 } from "@/lib/garden-progress";
 
 type Tab = "garden" | "memory" | "journal";
 type NarrationCue = "intro" | RegionKey;
 type CaptionLine = { start: number; end: number; text: string };
-type LayoutHistory = { past: DecorationPlacement[][]; future: DecorationPlacement[][] };
+type LayoutSnapshot = { placements: DecorationPlacement[]; trash: TrashedDecoration[] };
+type LayoutHistory = { past: LayoutSnapshot[]; future: LayoutSnapshot[] };
 
 type AudioNodes = {
   context: AudioContext;
@@ -96,11 +99,34 @@ function copyLayout(placements: DecorationPlacement[]) {
   return placements.map((placement) => ({ ...placement }));
 }
 
+function copyTrash(items: TrashedDecoration[]) {
+  return items.map((item) => ({ ...item }));
+}
+
+function copyLayoutSnapshot(placements: DecorationPlacement[], trash: TrashedDecoration[]): LayoutSnapshot {
+  return { placements: copyLayout(placements), trash: copyTrash(trash) };
+}
+
 function layoutsMatch(a: DecorationPlacement[], b: DecorationPlacement[]) {
   return a.length === b.length && a.every((placement, index) => {
     const candidate = b[index];
     return candidate && placement.id === candidate.id && placement.rewardKey === candidate.rewardKey && placement.x === candidate.x && placement.y === candidate.y && placement.rotation === candidate.rotation && placement.scale === candidate.scale;
   });
+}
+
+function trashMatches(a: TrashedDecoration[], b: TrashedDecoration[]) {
+  return a.length === b.length && a.every((item, index) => {
+    const candidate = b[index];
+    return candidate && item.id === candidate.id && item.rewardKey === candidate.rewardKey && item.x === candidate.x && item.y === candidate.y && item.rotation === candidate.rotation && item.scale === candidate.scale && item.trashedAt === candidate.trashedAt;
+  });
+}
+
+function restoredPlacementId(placement: TrashedDecoration, current: DecorationPlacement[]) {
+  if (!current.some((item) => item.id === placement.id)) return placement.id;
+  const prefix = `${placement.rewardKey}-restored-`;
+  let sequence = 1;
+  while (current.some((item) => item.id === `${prefix}${sequence}`)) sequence += 1;
+  return `${prefix}${sequence}`;
 }
 
 const INITIAL_PLOTS: GardenPlot[] = [
@@ -144,6 +170,8 @@ export default function Home() {
   const [butterflySeen, setButterflySeen] = useState(() => initialProgress.butterflySeen ?? false);
   const [memoryProgress, setMemoryProgress] = useState<MemoryProgress>(() => initialProgress.memory ? mergeMemoryProgress(initialProgress.memory) : createMemoryProgress());
   const [decorations, setDecorations] = useState<DecorationPlacement[]>(() => initialProgress.decorations ?? []);
+  const [trash, setTrash] = useState<TrashedDecoration[]>(() => initialProgress.trash ?? []);
+  const [personalPresets, setPersonalPresets] = useState<PersonalPreset[]>(() => initialProgress.personalPresets ?? []);
   const [grid, setGrid] = useState<GridSettings>(() => initialProgress.grid ?? DEFAULT_GRID_SETTINGS);
   const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>(() => initialProgress.subtitles ?? DEFAULT_SUBTITLE_SETTINGS);
   const [activeLayoutPreset, setActiveLayoutPreset] = useState<SeasonPreset | null>(() => initialProgress.activeLayoutPreset ?? null);
@@ -153,6 +181,7 @@ export default function Home() {
   const audioRef = useRef<AudioNodes | null>(null);
   const narrationRef = useRef<HTMLAudioElement | null>(null);
   const layoutRef = useRef<DecorationPlacement[]>(copyLayout(initialProgress.decorations ?? []));
+  const trashRef = useRef<TrashedDecoration[]>(copyTrash(initialProgress.trash ?? []));
   const layoutHistoryRef = useRef<LayoutHistory>({ past: [], future: [] });
 
   const selected = plots.find((plot) => plot.id === selectedPlot) ?? plots[0];
@@ -169,7 +198,7 @@ export default function Home() {
     [fragmentCount, honey, seeds],
   );
   const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
-    version: 6,
+    version: 7,
     updatedAt: new Date().toISOString(),
     time,
     weather,
@@ -182,10 +211,12 @@ export default function Home() {
     butterflySeen,
     memory: memoryProgress,
     decorations,
+    trash,
+    personalPresets,
     grid,
     subtitles: subtitleSettings,
     activeLayoutPreset,
-  }), [activeLayoutPreset, beeBond, butterflySeen, decorations, grid, honey, memoryProgress, plots, seeds, selectedPlot, subtitleSettings, time, water, weather]);
+  }), [activeLayoutPreset, beeBond, butterflySeen, decorations, grid, honey, memoryProgress, personalPresets, plots, seeds, selectedPlot, subtitleSettings, time, trash, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -420,15 +451,19 @@ export default function Home() {
     setBeeBond((current) => current + 1);
   }
 
-  function commitLayout(next: DecorationPlacement[], preset: SeasonPreset | null = null) {
+  function commitLayout(next: DecorationPlacement[], preset: SeasonPreset | null = null, nextTrash: TrashedDecoration[] = trashRef.current) {
     const current = layoutRef.current;
-    if (layoutsMatch(current, next)) return;
+    const currentTrash = trashRef.current;
+    if (layoutsMatch(current, next) && trashMatches(currentTrash, nextTrash)) return;
     const history = layoutHistoryRef.current;
-    history.past = [...history.past, copyLayout(current)].slice(-MAX_LAYOUT_HISTORY);
+    history.past = [...history.past, copyLayoutSnapshot(current, currentTrash)].slice(-MAX_LAYOUT_HISTORY);
     history.future = [];
     const copied = copyLayout(next);
+    const copiedTrash = copyTrash(nextTrash);
     layoutRef.current = copied;
+    trashRef.current = copiedTrash;
     setDecorations(copied);
+    setTrash(copiedTrash);
     setActiveLayoutPreset(preset);
   }
 
@@ -437,10 +472,13 @@ export default function Home() {
     const previous = history.past.at(-1);
     if (!previous) return;
     history.past = history.past.slice(0, -1);
-    history.future = [copyLayout(layoutRef.current), ...history.future].slice(0, MAX_LAYOUT_HISTORY);
-    const restored = copyLayout(previous);
+    history.future = [copyLayoutSnapshot(layoutRef.current, trashRef.current), ...history.future].slice(0, MAX_LAYOUT_HISTORY);
+    const restored = copyLayout(previous.placements);
+    const restoredTrash = copyTrash(previous.trash);
     layoutRef.current = restored;
+    trashRef.current = restoredTrash;
     setDecorations(restored);
+    setTrash(restoredTrash);
     setActiveLayoutPreset(null);
     toast("Đã hoàn tác một nét sắp đặt", { description: "Khu vườn trở về dấu vết vừa trước đó." });
   }
@@ -450,10 +488,13 @@ export default function Home() {
     const next = history.future.at(0);
     if (!next) return;
     history.future = history.future.slice(1);
-    history.past = [...history.past, copyLayout(layoutRef.current)].slice(-MAX_LAYOUT_HISTORY);
-    const restored = copyLayout(next);
+    history.past = [...history.past, copyLayoutSnapshot(layoutRef.current, trashRef.current)].slice(-MAX_LAYOUT_HISTORY);
+    const restored = copyLayout(next.placements);
+    const restoredTrash = copyTrash(next.trash);
     layoutRef.current = restored;
+    trashRef.current = restoredTrash;
     setDecorations(restored);
+    setTrash(restoredTrash);
     setActiveLayoutPreset(null);
     toast("Đã làm lại một nét sắp đặt", { description: "Hiện vật trở lại vị trí vừa chọn." });
   }
@@ -470,11 +511,61 @@ export default function Home() {
     setButterflySeen(snapshot.butterflySeen);
     setMemoryProgress(mergeMemoryProgress(snapshot.memory));
     setDecorations(snapshot.decorations);
+    setTrash(snapshot.trash);
+    setPersonalPresets(snapshot.personalPresets);
     layoutRef.current = copyLayout(snapshot.decorations);
+    trashRef.current = copyTrash(snapshot.trash);
     layoutHistoryRef.current = { past: [], future: [] };
     setGrid(snapshot.grid);
     setSubtitleSettings(snapshot.subtitles);
     setActiveLayoutPreset(snapshot.activeLayoutPreset);
+  }
+
+  function deleteDecoration(id: string) {
+    const removed = layoutRef.current.find((placement) => placement.id === id);
+    if (!removed) return;
+    const nextTrash = [...trashRef.current.filter((item) => item.id !== id), { ...removed, trashedAt: new Date().toISOString() }].slice(-20);
+    commitLayout(layoutRef.current.filter((placement) => placement.id !== id), null, nextTrash);
+    toast("Đã cất hiện vật vào thùng giấy tái chế", { description: "Dấu vết ấy vẫn có thể được khôi phục về khu vườn." });
+  }
+
+  function restoreDecoration(id: string) {
+    const removed = trashRef.current.find((item) => item.id === id);
+    if (!removed) return;
+    const restored: DecorationPlacement = { ...removed, id: restoredPlacementId(removed, layoutRef.current) };
+    const nextTrash = trashRef.current.filter((item) => item.id !== id);
+    commitLayout([...layoutRef.current, restored], null, nextTrash);
+    toast("Hiện vật đã trở về", { description: "Nó được đặt lại đúng vị trí và dáng vẻ khi được cất đi." });
+  }
+
+  function savePersonalPreset(name: string) {
+    const normalizedName = name.trim().replace(/\s+/g, " ").slice(0, 42);
+    if (!normalizedName) return;
+    const preset: PersonalPreset = {
+      id: `layout-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      name: normalizedName,
+      createdAt: new Date().toISOString(),
+      placements: copyLayout(layoutRef.current),
+    };
+    setPersonalPresets((current) => [...current, preset].slice(-10));
+    toast("Đã ghim trang bố cục vào sổ", { description: `“${normalizedName}” sẽ chờ bạn ở bàn sắp đặt.` });
+  }
+
+  function applyPersonalPreset(preset: PersonalPreset) {
+    commitLayout(copyLayout(preset.placements));
+    toast("Đã mở lại một trang bố cục", { description: `Khu vườn vừa trở về “${preset.name}”.` });
+  }
+
+  function renamePersonalPreset(id: string, name: string) {
+    const normalizedName = name.trim().replace(/\s+/g, " ").slice(0, 42);
+    if (!normalizedName) return;
+    setPersonalPresets((current) => current.map((preset) => preset.id === id ? { ...preset, name: normalizedName } : preset));
+    toast("Tên trang bố cục đã được sửa", { description: `Từ nay Ong sẽ gọi nó là “${normalizedName}”.` });
+  }
+
+  function deletePersonalPreset(id: string) {
+    setPersonalPresets((current) => current.filter((preset) => preset.id !== id));
+    toast("Trang bố cục đã được gỡ khỏi sổ", { description: "Bố cục đang dùng trong khu vườn không thay đổi." });
   }
 
   return (
@@ -558,7 +649,7 @@ export default function Home() {
                 <div className="bee-flight-trace" aria-hidden="true"><i /><i /><i /></div>
                 <div className="garden-field-note" aria-hidden="true"><span>↳</span><em>vệt phấn: 01</em><small>đất còn ấm</small></div>
                 <div className="pressed-sprig" aria-hidden="true"><i /><i /><i /></div>
-                <GardenDecorations progress={memoryProgress} placements={decorations} grid={grid} activePreset={activeLayoutPreset} canUndo={layoutHistoryRef.current.past.length > 0} canRedo={layoutHistoryRef.current.future.length > 0} onPlacementChange={commitLayout} onGridChange={setGrid} onUndo={undoLayout} onRedo={redoLayout} onApplyPreset={(placements, preset) => { commitLayout(placements, preset); toast("Đã ghim một trang vườn theo mùa", { description: "Bạn luôn có thể hoàn tác để tìm lại bố cục cũ." }); }} />
+                <GardenDecorations progress={memoryProgress} placements={decorations} trash={trash} personalPresets={personalPresets} grid={grid} activePreset={activeLayoutPreset} canUndo={layoutHistoryRef.current.past.length > 0} canRedo={layoutHistoryRef.current.future.length > 0} onPlacementChange={commitLayout} onGridChange={setGrid} onUndo={undoLayout} onRedo={redoLayout} onDeletePlacement={deleteDecoration} onRestoreFromTrash={restoreDecoration} onSavePersonalPreset={savePersonalPreset} onApplyPersonalPreset={applyPersonalPreset} onRenamePersonalPreset={renamePersonalPreset} onDeletePersonalPreset={deletePersonalPreset} onApplyPreset={(placements, preset) => { commitLayout(placements, preset); toast("Đã ghim một trang vườn theo mùa", { description: "Bạn luôn có thể hoàn tác để tìm lại bố cục cũ." }); }} />
                 <NarrationCaption caption={caption} settings={subtitleSettings} onDismiss={() => { narrationRef.current?.pause(); setCaption(null); }} />
                 <button className="creature butterfly" onClick={followButterfly} aria-label="Theo Bướm xanh"><span className="butterfly-mark">✧</span><span>Theo Bướm</span></button>
                 <button className="creature bee" onClick={talkToBee} aria-label="Nói chuyện với Ong"><Bug size={22} /><span>Hỏi Ong</span></button>

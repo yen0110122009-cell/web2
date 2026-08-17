@@ -31,4 +31,11 @@
 - [x] Xây dựng điều khiển Undo/Redo, phím tắt và sao chép hiện vật có phản hồi rõ ràng.
 - [x] Tạo bảng preset Xuân, Hạ, Thu, Đông với bố cục hiện vật và ghi chú riêng.
 - [x] Kiểm thử chuỗi thao tác, sao chép, preset, tải lại trang, responsive và build production.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Xác định vòng đời hiện vật bị xóa, khả năng khôi phục và giới hạn thùng giấy tái chế.
+- [x] Thiết kế cấu trúc preset cá nhân có tên, dữ liệu bố cục và quy tắc kiểm tra tên hợp lệ.
+- [x] Mở rộng tiến trình và sao lưu JSON cho thùng rác cùng danh sách preset cá nhân.
+- [x] Xây dựng xóa hiện vật, mở thùng giấy tái chế và khôi phục hiện vật về vị trí cũ.
+- [x] Xây dựng lưu, đổi tên, áp dụng và xóa preset bố cục cá nhân.
+- [x] Kiểm thử thao tác xóa–khôi phục, preset, lưu–nhập dữ liệu, responsive và build production.
 - [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.

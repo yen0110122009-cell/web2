@@ -1,11 +1,13 @@
 /**
  * Design system — Nhật ký Mật Ong:
- * Bàn sắp đặt là một trang mẫu vật sống; lịch sử, bản sao và preset mùa phải giống dụng cụ ghi chép trên bàn làm vườn, không phải HUD game.
+ * Bàn sắp đặt là một trang mẫu vật sống; lịch sử, bản sao, thùng giấy tái chế và trang bố cục riêng phải giống dụng cụ ghi chép trên bàn làm vườn, không phải HUD game.
  */
 import { useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
-import { Copy, Grid3X3, LockKeyhole, Move, Redo2, RotateCcw, Sparkles, Undo2, ZoomIn, ZoomOut } from "lucide-react";
-import type { DecorationPlacement, GridSettings, MemoryProgress, RegionKey, SeasonPreset } from "@/lib/garden-progress";
+import type { CSSProperties, FormEvent, KeyboardEvent, PointerEvent } from "react";
+import { BookmarkPlus, Copy, Grid3X3, LockKeyhole, Move, Pencil, Redo2, RotateCcw, Save, Sparkles, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import type { DecorationPlacement, GridSettings, MemoryProgress, PersonalPreset, RegionKey, SeasonPreset, TrashedDecoration } from "@/lib/garden-progress";
 import "./memory-rewards.css";
 import "./layout-studio.css";
 
@@ -60,9 +62,21 @@ function makeSeasonalLayout(preset: SeasonalPreset, progress: MemoryProgress) {
   return preset.positions.filter(([rewardKey]) => isUnlocked(progress, rewardKey)).map(([rewardKey, x, y, rotation, scale], index) => ({ id: `${rewardKey}-${preset.key}-${index + 1}`, rewardKey, x, y, rotation, scale }));
 }
 
+function rewardFor(key: RegionKey) {
+  return REWARDS.find((reward) => reward.key === key) ?? REWARDS[0];
+}
+
+function formatSavedDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "vừa ghi";
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+}
+
 export function GardenDecorations({
   progress,
   placements,
+  trash,
+  personalPresets,
   grid,
   activePreset,
   canUndo,
@@ -72,9 +86,17 @@ export function GardenDecorations({
   onUndo,
   onRedo,
   onApplyPreset,
+  onDeletePlacement,
+  onRestoreFromTrash,
+  onSavePersonalPreset,
+  onApplyPersonalPreset,
+  onRenamePersonalPreset,
+  onDeletePersonalPreset,
 }: {
   progress: MemoryProgress;
   placements: DecorationPlacement[];
+  trash: TrashedDecoration[];
+  personalPresets: PersonalPreset[];
   grid: GridSettings;
   activePreset: SeasonPreset | null;
   canUndo: boolean;
@@ -84,10 +106,21 @@ export function GardenDecorations({
   onUndo: () => void;
   onRedo: () => void;
   onApplyPreset: (placements: DecorationPlacement[], preset: SeasonPreset) => void;
+  onDeletePlacement: (id: string) => void;
+  onRestoreFromTrash: (id: string) => void;
+  onSavePersonalPreset: (name: string) => void;
+  onApplyPersonalPreset: (preset: PersonalPreset) => void;
+  onRenamePersonalPreset: (id: string, name: string) => void;
+  onDeletePersonalPreset: (id: string) => void;
 }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const [presetNameError, setPresetNameError] = useState("");
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const unlocked = REWARDS.filter((reward) => isUnlocked(progress, reward.key));
 
   function placementFor(id: string) {
@@ -114,6 +147,12 @@ export function GardenDecorations({
     const copy: DecorationPlacement = { ...current, id: nextPlacementId(current.rewardKey, placements), x: clamp(snap(current.x + 5, grid), 4, 96), y: clamp(snap(current.y + 5, grid), 7, 92) };
     onPlacementChange([...placements, copy]);
     setSelectedId(copy.id);
+  }
+
+  function deleteSelectedPlacement() {
+    if (!selectedId) return;
+    onDeletePlacement(selectedId);
+    setSelectedId(null);
   }
 
   function moveToPointer(id: string, clientX: number, clientY: number) {
@@ -169,8 +208,34 @@ export function GardenDecorations({
     }
   }
 
+  function openSaveDialog() {
+    setEditingPresetId(null);
+    setPresetName("");
+    setPresetNameError("");
+    setIsPresetDialogOpen(true);
+  }
+
+  function openRenameDialog(preset: PersonalPreset) {
+    setEditingPresetId(preset.id);
+    setPresetName(preset.name);
+    setPresetNameError("");
+    setIsPresetDialogOpen(true);
+  }
+
+  function submitPresetName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = presetName.trim().replace(/\s+/g, " ").slice(0, 42);
+    if (!name) {
+      setPresetNameError("Hãy để lại một cái tên để Ong tìm được trang này.");
+      return;
+    }
+    if (editingPresetId) onRenamePersonalPreset(editingPresetId, name);
+    else onSavePersonalPreset(name);
+    setIsPresetDialogOpen(false);
+  }
+
   const selected = selectedId ? placementFor(selectedId) : null;
-  const selectedReward = selected ? REWARDS.find((reward) => reward.key === selected.rewardKey) : null;
+  const selectedReward = selected ? rewardFor(selected.rewardKey) : null;
 
   return (
     <div className="garden-decorations" ref={canvasRef} aria-label="Các phần thưởng đã đặt trong khu vườn">
@@ -182,6 +247,30 @@ export function GardenDecorations({
         <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Hoàn tác thao tác sắp đặt"><Undo2 size={13} /> Hoàn tác</button>
         <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="Làm lại thao tác sắp đặt"><Redo2 size={13} /> Làm lại</button>
       </div>
+      <section className="layout-personal-tray" aria-label="Trang bố cục của tôi">
+        <header><BookmarkPlus size={12} /> Bố cục của tôi <small>{personalPresets.length}/10 trang</small></header>
+        <button type="button" className="save-personal-layout" onClick={openSaveDialog}><Save size={12} /> Lưu bố cục này</button>
+        <div className="personal-preset-list">
+          {personalPresets.length === 0 ? <p className="personal-preset-empty">Ghim một lần sắp đặt vừa ý để quay về sau này.</p> : personalPresets.map((preset) => (
+            <article key={preset.id} className="personal-preset">
+              <button type="button" className="personal-preset-apply" onClick={() => onApplyPersonalPreset(preset)} title={`Áp dụng bố cục ${preset.name}`}><span>⌁</span><b>{preset.name}</b><small>{preset.placements.length} hiện vật · {formatSavedDate(preset.createdAt)}</small></button>
+              <div className="personal-preset-actions" aria-label={`Dụng cụ cho ${preset.name}`}>
+                <button type="button" onClick={() => openRenameDialog(preset)} aria-label={`Đổi tên ${preset.name}`}><Pencil size={11} /></button>
+                <button type="button" onClick={() => onDeletePersonalPreset(preset.id)} aria-label={`Xóa ${preset.name}`}><Trash2 size={11} /></button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="recycling-inline">
+          <button type="button" className={`trash-toggle ${isTrashOpen ? "active" : ""}`} onClick={() => setIsTrashOpen((open) => !open)} aria-expanded={isTrashOpen}><Trash2 size={12} /> Thùng giấy tái chế <small>{trash.length}/20</small></button>
+          {isTrashOpen && <div className="recycling-list">
+            {trash.length === 0 ? <p>Chưa có hiện vật nào cần cất lại.</p> : trash.slice().reverse().map((item) => {
+              const reward = rewardFor(item.rewardKey);
+              return <article key={item.id} className="recycling-item"><span aria-hidden="true">{reward.symbol}</span><div><b>{reward.name}</b><small>Cất {formatSavedDate(item.trashedAt)}</small></div><button type="button" onClick={() => onRestoreFromTrash(item.id)} aria-label={`Khôi phục ${reward.name}`}><Undo2 size={12} /> Khôi phục</button></article>;
+            })}
+          </div>}
+        </div>
+      </section>
       <section className="season-preset-tray" aria-label="Bố cục theo mùa">
         <header><Sparkles size={12} /> Trang theo mùa <small>Áp dụng nhanh</small></header>
         <div className="season-preset-list">{SEASONAL_PRESETS.map((preset) => <button key={preset.key} type="button" className={`season-preset ${activePreset === preset.key ? "active" : ""}`} title={preset.note} onClick={() => onApplyPreset(makeSeasonalLayout(preset, progress), preset.key)}><span>{preset.symbol}</span>{preset.label}</button>)}</div>
@@ -205,8 +294,26 @@ export function GardenDecorations({
           <button type="button" onClick={() => updatePlacement(selected.id, { scale: selected.scale + .1 })} aria-label="Phóng to"><ZoomIn size={13} /></button>
           <button type="button" className="duplicate-decoration" onClick={() => duplicatePlacement(selected.id)} aria-label="Sao chép hiện vật"><Copy size={12} /> Sao chép</button>
           <button type="button" onClick={() => updatePlacement(selected.id, { rotation: 0, scale: 1 })} aria-label="Trả về xoay và kích thước ban đầu"><RotateCcw size={13} /></button>
+          <button type="button" className="delete-decoration" onClick={deleteSelectedPlacement} aria-label={`Cất ${selectedReward.name} vào thùng giấy tái chế`}><Trash2 size={12} /> Xóa</button>
         </div>
       )}
+      <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
+        <DialogContent className="layout-name-dialog">
+          <form onSubmit={submitPresetName}>
+            <DialogHeader>
+              <DialogTitle>{editingPresetId ? "Đổi tên trang bố cục" : "Ghi một trang bố cục mới"}</DialogTitle>
+              <DialogDescription>{editingPresetId ? "Một cái tên nhỏ để Ong nhận ra lần sắp đặt này." : "Khu vườn sẽ giữ nguyên vị trí, góc xoay và kích thước của các hiện vật hiện có."}</DialogDescription>
+            </DialogHeader>
+            <label className="layout-name-field" htmlFor="personal-layout-name">Tên trang bố cục</label>
+            <Input id="personal-layout-name" value={presetName} onChange={(event) => { setPresetName(event.target.value.slice(0, 42)); setPresetNameError(""); }} placeholder="Ví dụ: Góc trà dưới hiên" maxLength={42} autoFocus aria-invalid={Boolean(presetNameError)} />
+            {presetNameError && <p className="layout-name-error" role="alert">{presetNameError}</p>}
+            <DialogFooter>
+              <button type="button" className="layout-dialog-cancel" onClick={() => setIsPresetDialogOpen(false)}>Để sau</button>
+              <button type="submit" className="layout-dialog-save"><Save size={14} /> {editingPresetId ? "Đổi tên" : "Ghim vào sổ"}</button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -224,7 +331,7 @@ export function MemoryRewards({ progress, placements, onPlacementChange, onVisit
   return (
     <section className="memory-rewards" aria-label="Trang trí ký ức">
       <header><div><p className="eyebrow">Dấu vết trở về</p><h3>Tủ trang trí của khu vườn</h3></div><span className="reward-count"><Sparkles size={14} /> {unlocked}/5</span></header>
-      <p className="reward-instruction">Đặt hiện vật vào trang vườn, kéo thả đến vị trí vừa ý, rồi dùng tay nắm để xoay hoặc co giãn. Khi cần lặp lại một dấu vết, hãy sao chép ngay tại bề mặt vườn.</p>
+      <p className="reward-instruction">Đặt hiện vật vào trang vườn, kéo thả đến vị trí vừa ý, rồi dùng tay nắm để xoay hoặc co giãn. Khi cần lặp lại một dấu vết, hãy sao chép ngay tại bề mặt vườn; những hiện vật xóa đi vẫn chờ trong Thùng giấy tái chế.</p>
       <div className="reward-shelf">{REWARDS.map((reward) => {
         const unlockedReward = isUnlocked(progress, reward.key);
         const copies = placements.filter((placement) => placement.rewardKey === reward.key).length;
