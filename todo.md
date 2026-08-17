@@ -45,4 +45,4 @@
 - [x] Xây dựng Album mẫu vật để lưu, mở khóa và xem các hạt, dấu vết cùng mảnh ký ức.
 - [x] Xây dựng Thư của Ong với thư mở dần theo tình trạng khu vườn và các dấu ấn ký ức.
 - [x] Kiểm thử thao tác tạo ghi chép, lưu–khôi phục, responsive và build production.
-- [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
