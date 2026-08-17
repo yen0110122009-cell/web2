@@ -323,9 +323,13 @@ export default function MemoryAtlas({ progress, onProgressChange, onRegionUnders
       </div>}
 
       {activeRoom === "lake" && <div className={`puzzle-stage lake-stage lake-${lakeCount}`}>
+        <div className="lake-conditions" aria-label="Điều khiển trạng thái mặt hồ">
+          <div><span>Trạng thái mặt hồ</span><strong>{time === "day" ? "Ngày" : "Đêm"} · {weather === "rain" ? "Mưa" : "Trong"}</strong></div>
+          <div className="lake-condition-actions"><button onClick={() => onTimeChange("day")} className={time === "day" ? "active" : ""}><Sun size={14} /> Ngày</button><button onClick={() => onTimeChange("night")} className={time === "night" ? "active" : ""}><Moon size={14} /> Đêm</button><button onClick={() => onWeatherChange(weather === "rain" ? "clear" : "rain")} className={weather === "rain" ? "active" : ""}><CloudRain size={14} /> {weather === "rain" ? "Trong" : "Mưa"}</button></div>
+        </div>
         <div className="lake-scene"><span className="lake-moon" /><span className="lake-ripple ripple-one" /><span className="lake-ripple ripple-two" /><span className="lake-butterfly">✧</span><button className="lake-look" onClick={lookIntoLake}><Waves size={17} /> Nhìn xuống hồ</button>{lakeCount >= 3 && <button className="lake-key" onClick={placeLakeKey}><KeyRound size={17} /> Đưa chìa khóa vào bóng cửa</button>}</div>
         <div className="lake-times"><span className={lakeCount >= 1 ? "seen" : ""}>01 · Ngày</span><span className={lakeCount >= 2 ? "seen" : ""}>02 · Mưa</span><span className={lakeCount >= 3 ? "seen" : ""}>03 · Đêm</span></div>
-        <div className="puzzle-caption"><div><Waves size={15} /><span>{lakeCount} / 3 vòng gợn đã giữ lại một cảnh</span></div><p>{lakeCount === 3 ? "Ba hình ảnh đang chồng lên nhau. Chìa khóa thuộc về bóng cửa, không phải cánh cửa thật." : "Mặt hồ chỉ cho một hình ảnh trong mỗi thời điểm."}</p></div>
+        <div className="puzzle-caption lake-caption"><div><Waves size={15} /><span>{lakeCount} / 3 vòng gợn đã giữ lại một cảnh</span></div><p>{lakeCount === 3 ? "Ba hình ảnh đang chồng lên nhau. Chìa khóa thuộc về bóng cửa, không phải cánh cửa thật." : "Theo thứ tự: Ngày · Trong → Ngày · Mưa → Đêm. Mỗi trạng thái chỉ cần nhìn một lần."}</p><button className="lake-reset" onClick={() => resetRoomPuzzle("lake")}><RotateCcw size={14} /> Đặt lại</button></div>
       </div>}
 
       {activeRoom === "hive" && <div className="puzzle-stage hive-stage">

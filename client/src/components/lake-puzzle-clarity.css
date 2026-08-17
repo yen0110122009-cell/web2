@@ -1,0 +1,78 @@
+/* Nhật ký Mật Ong — Hồ Phản Chiếu: điều khiển trạng thái là tấm giấy ghim trên mặt nước mực đêm, luôn đọc rõ và chạm được. */
+.lake-conditions {
+  position: absolute;
+  z-index: 7;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  padding: 10px 11px;
+  border: 1px solid #d9c68b;
+  border-radius: 3px 12px 5px 10px;
+  background: #f9f1d7;
+  color: #283e37;
+  box-shadow: 3px 5px 0 rgba(16, 40, 48, .24);
+}
+
+.lake-conditions > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lake-conditions span {
+  color: #6e6551;
+  font: 800 8px/1 "DM Sans", sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.lake-conditions strong {
+  color: #264e49;
+  font: 700 12px/1 "Fraunces", serif;
+}
+
+.lake-condition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.lake-condition-actions button,
+.lake-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #b9a675;
+  border-radius: 3px 8px 3px 7px;
+  background: #fffaf0;
+  color: #34544e;
+  cursor: pointer;
+  font: 800 9px/1 "DM Sans", sans-serif;
+  transition: transform 160ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)), background-color 160ms var(--ease-out, cubic-bezier(.23, 1, .32, 1));
+}
+
+.lake-condition-actions button { padding: 6px 7px; }
+.lake-condition-actions button.active { border-color: #bd8625; background: #e8c562; color: #203e38; }
+.lake-condition-actions button:active,
+.lake-reset:active { transform: scale(.97); }
+
+.lake-caption { padding-right: 78px; }
+.lake-caption p { flex: 1; }
+.lake-reset { position: absolute; right: 10px; bottom: 9px; padding: 5px 6px; }
+
+@media (max-width: 640px) {
+  .lake-conditions { top: 13px; right: 12px; left: 12px; min-width: 0; padding: 9px; }
+  .lake-times { top: 97px; left: 13px; }
+  .lake-moon { top: 30%; }
+  .lake-butterfly { top: 37%; right: 16%; }
+  .lake-caption { align-items: flex-start; padding-right: 68px; }
+  .lake-caption p { font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lake-condition-actions button,
+  .lake-reset { transition: none; }
+}
