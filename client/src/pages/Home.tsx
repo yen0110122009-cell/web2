@@ -25,19 +25,21 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import MemoryAtlas from "@/components/MemoryAtlas";
+import MutationGallery from "@/components/MutationGallery";
+import {
+  createMemoryProgress,
+  loadGardenProgress,
+  mergeMemoryProgress,
+  saveGardenProgress,
+  type GardenPlot,
+  type GardenProgressSnapshot,
+  type MemoryProgress,
+  type TimeOfDay,
+  type Weather,
+} from "@/lib/garden-progress";
 
 type Tab = "garden" | "memory" | "journal";
-type TimeOfDay = "day" | "night";
-type Weather = "clear" | "rain";
-type PlantState = "empty" | "seed" | "thirsty" | "bloom" | "mutated";
-
-type Plot = {
-  id: number;
-  name: string;
-  state: PlantState;
-  emoji: string;
-  note: string;
-};
 
 type AudioNodes = {
   context: AudioContext;
@@ -56,21 +58,13 @@ const ASSETS = {
   logo: "/manus-storage/bee-garden-logo_ac8c5c49.png",
 };
 
-const INITIAL_PLOTS: Plot[] = [
+const INITIAL_PLOTS: GardenPlot[] = [
   { id: 1, name: "Tulip Kem", state: "bloom", emoji: "✿", note: "Nở đủ nắng." },
   { id: 2, name: "Hướng Dương Sao", state: "mutated", emoji: "✦", note: "Mưa đêm đã chạm vào nó." },
   { id: 3, name: "Ô đất nhỏ", state: "empty", emoji: "·", note: "Chờ một hạt giống." },
   { id: 4, name: "Hoa Mặt Trăng", state: "thirsty", emoji: "◌", note: "Cần một lượt tưới." },
   { id: 5, name: "Mầm non", state: "seed", emoji: "⌁", note: "Đang lớn chậm rãi." },
   { id: 6, name: "Ô đất nhỏ", state: "empty", emoji: "·", note: "Có dấu phấn hoa." },
-];
-
-const MEMORY_REGIONS = [
-  { id: 1, name: "Hiên Mật Ong", icon: "◒", state: "Đã hiểu", tone: "done" },
-  { id: 2, name: "Vườn Hạt Cuối", icon: "✦", state: "Có dấu vết", tone: "trace" },
-  { id: 3, name: "Hồ Phản Chiếu", icon: "◌", state: "Chưa nhớ", tone: "locked" },
-  { id: 4, name: "Tổ Ong Rỗng", icon: "⌂", state: "Bị nhiễu", tone: "noise" },
-  { id: 5, name: "Phòng Không Tường", icon: "◇", state: "Chưa nhớ", tone: "locked" },
 ];
 
 function environmentLabel(time: TimeOfDay, weather: Weather) {
@@ -80,8 +74,8 @@ function environmentLabel(time: TimeOfDay, weather: Weather) {
   return "Ngày trong · vườn đang thở";
 }
 
-function stateLabel(state: PlantState) {
-  const labels: Record<PlantState, string> = {
+function stateLabel(state: GardenPlot["state"]) {
+  const labels: Record<GardenPlot["state"], string> = {
     empty: "Đất trống",
     seed: "Đang nảy",
     thirsty: "Cần tưới",
@@ -92,31 +86,34 @@ function stateLabel(state: PlantState) {
 }
 
 export default function Home() {
+  const [initialProgress] = useState(loadGardenProgress);
   const [activeTab, setActiveTab] = useState<Tab>("garden");
-  const [time, setTime] = useState<TimeOfDay>("day");
-  const [weather, setWeather] = useState<Weather>("clear");
-  const [plots, setPlots] = useState<Plot[]>(INITIAL_PLOTS);
-  const [selectedPlot, setSelectedPlot] = useState(4);
-  const [water, setWater] = useState(4);
-  const [seeds, setSeeds] = useState(3);
-  const [honey, setHoney] = useState(42);
-  const [beeBond, setBeeBond] = useState(14);
-  const [butterflySeen, setButterflySeen] = useState(false);
-  const [memoryCount, setMemoryCount] = useState(1);
+  const [time, setTime] = useState<TimeOfDay>(() => initialProgress.time ?? "day");
+  const [weather, setWeather] = useState<Weather>(() => initialProgress.weather ?? "clear");
+  const [plots, setPlots] = useState<GardenPlot[]>(() => initialProgress.plots?.length ? initialProgress.plots : INITIAL_PLOTS);
+  const [selectedPlot, setSelectedPlot] = useState(() => initialProgress.selectedPlot ?? 4);
+  const [water, setWater] = useState(() => initialProgress.water ?? 4);
+  const [seeds, setSeeds] = useState(() => initialProgress.seeds ?? 3);
+  const [honey, setHoney] = useState(() => initialProgress.honey ?? 42);
+  const [beeBond, setBeeBond] = useState(() => initialProgress.beeBond ?? 14);
+  const [butterflySeen, setButterflySeen] = useState(() => initialProgress.butterflySeen ?? false);
+  const [memoryProgress, setMemoryProgress] = useState<MemoryProgress>(() => initialProgress.memory ? mergeMemoryProgress(initialProgress.memory) : createMemoryProgress());
   const [doorPanelOpen, setDoorPanelOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const audioRef = useRef<AudioNodes | null>(null);
 
   const selected = plots.find((plot) => plot.id === selectedPlot) ?? plots[0];
   const environment = environmentLabel(time, weather);
+  const memoryCount = useMemo(() => Object.values(memoryProgress).filter((region) => region.status === 3).length, [memoryProgress]);
+  const fragmentCount = useMemo(() => Object.values(memoryProgress).reduce((total, region) => total + region.fragments.length, 0), [memoryProgress]);
   const filledSlots = useMemo(
     () => [
       { icon: "✦", label: "Hạt Tulip", amount: seeds, tone: "seed" },
       { icon: "◉", label: "Mật Ong", amount: honey, tone: "honey" },
       { icon: "⌁", label: "Phấn hoa", amount: 2, tone: "pollen" },
-      { icon: "◇", label: "Mảnh ký ức", amount: memoryCount, tone: "memory" },
+      { icon: "◇", label: "Mảnh ký ức", amount: fragmentCount, tone: "memory" },
     ],
-    [honey, memoryCount, seeds],
+    [fragmentCount, honey, seeds],
   );
 
   function updateAudioScene() {
@@ -192,6 +189,24 @@ export default function Home() {
     return () => stopAudio();
   }, []);
 
+  useEffect(() => {
+    const snapshot: GardenProgressSnapshot = {
+      version: 2,
+      updatedAt: new Date().toISOString(),
+      time,
+      weather,
+      plots,
+      selectedPlot,
+      water,
+      seeds,
+      honey,
+      beeBond,
+      butterflySeen,
+      memory: memoryProgress,
+    };
+    saveGardenProgress(snapshot);
+  }, [beeBond, butterflySeen, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
+
   function toggleSound() {
     if (soundOn) {
       stopAudio();
@@ -258,8 +273,8 @@ export default function Home() {
 
   function talkToBee() {
     setBeeBond((current) => current + 1);
-    if (beeBond >= 16 && memoryCount < 2) {
-      setMemoryCount(2);
+    if (beeBond >= 16 && memoryProgress.porch.status < 2) {
+      setMemoryProgress((current) => ({ ...current, porch: { ...current.porch, status: 2, fragments: current.porch.fragments.includes("bee-three-knocks") ? current.porch.fragments : [...current.porch.fragments, "bee-three-knocks"] } }));
       playChime("magic");
       toast("Ong trao một mảnh ký ức", { description: "“Ba tiếng gõ không phải lúc nào cũng là lời mời.”" });
       return;
@@ -282,6 +297,11 @@ export default function Home() {
   function inspectDoor() {
     setDoorPanelOpen(true);
     playChime("magic");
+  }
+
+  function handleRegionUnderstood() {
+    setHoney((current) => current + 2);
+    setBeeBond((current) => current + 1);
   }
 
   return (
@@ -383,30 +403,13 @@ export default function Home() {
             </div>
           )}
 
-          {activeTab === "memory" && (
-            <div className="memory-view">
-              <div className="stage-heading memory-title">
-                <div><p className="eyebrow">Sau cánh cửa</p><h2>Bản đồ của những điều Ong đã quên</h2></div>
-                <div className="memory-count"><Sparkles size={16} /> {memoryCount} / 5 mảnh ký ức</div>
-              </div>
-              <div className="memory-map">
-                <span className="map-sun" /><span className="map-pond" /><span className="map-hive" /><span className="map-trail-line" />
-                <div className="map-caption"><p>“Ký ức không nằm yên một chỗ.”</p><span>— Ong</span></div>
-              </div>
-              <div className="memory-trail">
-                {MEMORY_REGIONS.map((region, index) => (
-                  <button key={region.id} className={`memory-stop ${region.tone}`} onClick={() => { if (index <= memoryCount) { toast(region.name, { description: index === 1 ? "Một hạt giống đang chờ điều kiện mưa đêm." : "Khu vực này cần thêm ký ức để hiện rõ." }); playChime(index === 1 ? "magic" : "soft"); } else { playChime("wrong"); toast("Đường mòn vẫn mờ", { description: "Bạn cần nối thêm ký ức trước khi đi sâu hơn." }); } }}>
-                    <span className="stop-icon">{region.icon}</span><div><strong>{region.name}</strong><small>{region.state}</small></div><ChevronRight size={16} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {activeTab === "memory" && <MemoryAtlas progress={memoryProgress} onProgressChange={setMemoryProgress} onRegionUnderstood={handleRegionUnderstood} time={time} weather={weather} onTimeChange={setTime} onWeatherChange={setWeather} onChime={playChime} />}
 
           {activeTab === "journal" && (
             <div className="journal-view">
               <div className="stage-heading"><div><p className="eyebrow">Ghi chép thực địa</p><h2>Sổ tay người làm vườn</h2></div><button className="journal-filter">Ngày 12 <ChevronRight size={15} /></button></div>
               <article className="journal-entry"><div className="entry-date">12 / 08 · Sau cơn mưa</div><h3>Hướng Dương Sao không còn giống hôm qua</h3><p>Một vệt sáng nhỏ nằm trong nhị hoa. Ong không chạm vào nó, chỉ bay ba vòng và đậu ở góc trang.</p><div className="entry-tags"><span>Biến thể</span><span>Mưa đêm</span><span>Manh mối</span></div></article>
+              <MutationGallery />
               <article className="journal-entry faint"><div className="entry-date">Chưa có ngày</div><h3>Một trang dính kín bằng sáp mật ong</h3><p>Bạn chưa thể đọc được dòng này. Có vẻ nó cần năm mảnh ký ức.</p><button onClick={inspectDoor} className="text-action">Xem lại cánh cửa <ChevronRight size={14} /></button></article>
               <div className="inventory-panel"><div className="inventory-heading"><div><Package size={18} /><span>Túi đồ</span></div><small>{filledSlots.length} / 12 ô</small></div><div className="inventory-grid">{Array.from({ length: 12 }).map((_, index) => { const item = filledSlots[index]; return <div className={`inventory-slot ${item ? item.tone : "empty"}`} key={index}>{item ? <><span>{item.icon}</span><small>{item.amount}</small><em>{item.label}</em></> : <span className="slot-empty">·</span>}</div>; })}</div></div>
             </div>
@@ -421,7 +424,7 @@ export default function Home() {
             <div className="door-card-bottom"><p>Cánh cửa không tên</p><h3>{memoryCount < 5 ? "Nó đang lắng nghe" : "Nó đang chờ bạn"}</h3><button onClick={inspectDoor}>Chạm vào cánh cửa <ChevronRight size={16} /></button></div>
           </section>
           <section className="inventory-mini"><div className="rail-heading"><span><Package size={16} /> Túi đồ</span><small>12 phong bì</small></div><div className="specimen-rack">{filledSlots.map((item) => <div className={`specimen-tag ${item.tone}`} key={item.label}><span>{item.icon}</span><div><small>{item.label}</small><b>× {item.amount}</b></div><i /></div>)}<div className="empty-envelope"><span>8 phong bì</span><small>đang chờ dấu vết</small></div></div><button className="text-action" onClick={() => setActiveTab("journal")}>Mở túi đồ <ChevronRight size={14} /></button></section>
-          <section className="garden-weather"><div>{time === "day" ? <Sun size={20} /> : <Moon size={20} />}<span>{time === "day" ? "Ngày 12" : "Đêm 12"}</span></div><p>{weather === "rain" ? "Mưa làm Bướm xanh xuất hiện." : "Trời trong, cây nở chậm rãi."}</p></section>
+          <section className="garden-weather"><div>{time === "day" ? <Sun size={20} /> : <Moon size={20} />}<span>{time === "day" ? "Ngày 12" : "Đêm 12"}</span></div><p>{weather === "rain" ? "Mưa làm Bướm xanh xuất hiện." : "Trời trong, cây nở chậm rãi."}</p><small className="save-note">● Tự lưu trong trình duyệt</small></section>
         </aside>
       </main>
 
