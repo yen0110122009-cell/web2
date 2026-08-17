@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#edf2e5" />
+  <title>Magic Garden — Khu vườn nhỏ</title>
+  <style>
+    :root {
+      --paper: #f7f4ea;
+      --paper-deep: #e8eadb;
+      --card: rgba(255, 253, 247, .88);
+      --ink: #2f352d;
+      --muted: #6c756b;
+      --line: #d9ddce;
+      --leaf: #4b8a66;
+      --leaf-dark: #31674b;
+      --leaf-soft: #e2f0df;
+      --honey: #e2aa4b;
+      --honey-soft: #fff1c9;
+      --blossom: #cf6d68;
+      --blossom-soft: #f8e2df;
+      --sky: #8ab8ca;
+      --night: #303852;
+      --night-soft: #e8e9f3;
+      --shadow: 0 18px 48px rgba(59, 74, 54, .12);
+      --radius: 22px;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(255,255,255,.75), transparent 32%),
+        linear-gradient(135deg, #f8f5ec 0%, #edf1e4 48%, #f4eadc 100%);
+      font: 15px/1.5 ui-rounded, "Nunito", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: .33;
+      background-image: linear-gradient(rgba(58, 77, 55, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(58, 77, 55, .025) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    button, input { font: inherit; }
+    button { border: 0; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(75,138,102,.35); outline-offset: 3px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .app-shell { min-height: 100vh; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px clamp(18px, 4vw, 58px);
+      border-bottom: 1px solid rgba(74, 101, 72, .14);
+      background: rgba(249, 248, 240, .78);
+      backdrop-filter: blur(16px);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 42px;
+      height: 42px;
+      border-radius: 15px 17px 13px 19px;
+      color: #fff;
+      background: linear-gradient(145deg, #79aa70, #3f805d);
+      box-shadow: 3px 4px 0 rgba(45, 88, 61, .16);
+      font-size: 22px;
+      transform: rotate(-4deg);
+    }
+    .brand strong { display: block; font: 700 20px/1.05 Georgia, serif; letter-spacing: -.7px; }
+    .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,253,247,.78);
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .pill b { color: var(--ink); }
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      transition: transform 160ms var(--ease), background 160ms var(--ease), border-color 160ms var(--ease);
+    }
+    .icon-button:hover { transform: translateY(-2px); border-color: var(--line); background: rgba(255,255,255,.72); }
+    .icon-button.active { color: var(--leaf-dark); background: var(--leaf-soft); }
+
+    main { width: min(1180px, 100%); margin: 0 auto; padding: 34px clamp(17px, 4vw, 58px) 88px; }
+    .status-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 14px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(75,138,102,.18);
+      border-radius: 13px;
+      background: rgba(226, 240, 223, .84);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .status-strip strong { color: var(--leaf-dark); }
+    .status-strip button { padding: 5px 8px; border-radius: 7px; color: var(--leaf-dark); background: transparent; cursor: pointer; font-size: 10px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: end; gap: 28px; margin-bottom: 25px; }
+    .eyebrow { margin: 0 0 9px; color: var(--leaf); font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; }
+    .hero h1 { max-width: 720px; margin: 0; color: var(--ink); font: 700 clamp(39px, 5vw, 70px)/.96 Georgia, serif; letter-spacing: -3px; }
+    .hero h1 em { color: var(--leaf); font-style: normal; }
+    .lede { max-width: 650px; margin: 17px 0 0; color: var(--muted); font-size: 15px; }
+    .bee-card {
+      position: relative;
+      padding: 18px 19px 17px;
+      border: 1px solid rgba(224,170,75,.29);
+      border-radius: 20px 16px 22px 17px;
+      background: linear-gradient(145deg, rgba(255,246,209,.9), rgba(255,253,247,.8));
+      box-shadow: 0 8px 20px rgba(174,129,38,.08);
+      transform: rotate(1.3deg);
+    }
+    .bee-card::after { content: "✦"; position: absolute; top: -9px; right: 18px; color: var(--honey); font-size: 20px; }
+    .bee-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bee-face { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #f7d975; font-size: 21px; }
+    .bee-card strong { display: block; font: 700 16px Georgia, serif; }
+    .bee-card small { color: #8b6d29; font-size: 9px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+    .bee-card p { margin: 0; color: #6d5d36; font: 600 13px/1.35 Georgia, serif; }
+    .bee-card button { margin-top: 13px; padding: 8px 10px; border-radius: 9px; color: #78551a; background: rgba(255,255,255,.65); cursor: pointer; font-size: 10px; font-weight: 900; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 13px; margin: 20px 0 15px; }
+    .toolbar-left, .toolbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .soft-button, .primary-button, .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 38px;
+      padding: 9px 13px;
+      border-radius: 11px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 900;
+      transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+    }
+    .soft-button:hover, .primary-button:hover, .ghost-button:hover { transform: translateY(-2px); }
+    .soft-button { border: 1px solid var(--line); color: var(--muted); background: rgba(255,253,247,.76); }
+    .primary-button { color: #fff; background: linear-gradient(145deg, #5e9b73, #3c7c59); box-shadow: 0 4px 0 rgba(48,101,70,.14); }
+    .ghost-button { border: 1px solid var(--line); color: var(--muted); background: transparent; }
+    .weather-button { border: 1px solid rgba(75,138,102,.2); border-radius: 999px; background: rgba(255,253,247,.8); color: var(--leaf-dark); cursor: pointer; font-size: 11px; font-weight: 900; }
+    .weather-button span { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; }
+
+    .garden-card { position: relative; overflow: hidden; padding: 15px; border: 1px solid rgba(74,101,72,.18); border-radius: 27px; background: rgba(255,253,247,.75); box-shadow: var(--shadow); }
+    .garden-card::before { content: ""; position: absolute; width: 220px; height: 220px; top: -100px; right: -40px; border-radius: 50%; background: rgba(255,255,255,.35); filter: blur(4px); }
+    .garden-stage {
+      position: relative;
+      min-height: 480px;
+      overflow: hidden;
+      border-radius: 20px;
+      isolation: isolate;
+      background: linear-gradient(180deg, #c7e5e5 0%, #e5efdc 45%, #a7c884 46%, #78aa65 100%);
+      transition: background 480ms var(--ease), filter 480ms var(--ease);
+    }
+    .garden-stage::before { content: ""; position: absolute; inset: 45% 0 0; z-index: -1; background: repeating-radial-gradient(ellipse at 50% 0%, rgba(52,104,56,.12) 0 2px, transparent 3px 13px); opacity: .46; }
+    .garden-stage::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(circle at 20% 22%, rgba(255,255,255,.6), transparent 11%), radial-gradient(circle at 80% 22%, rgba(255,255,255,.42), transparent 13%); opacity: .64; }
+    .garden-stage[data-weather="rain"] { background: linear-gradient(180deg, #9fb9c5 0%, #c0d5d2 45%, #9bbb81 46%, #6e9f63 100%); }
+    .garden-stage[data-weather="night"], .garden-stage[data-weather="starry"] { background: linear-gradient(180deg, #222b4d 0%, #3c4965 48%, #556e61 49%, #3b644e 100%); }
+    .garden-stage[data-weather="starry"]::after { opacity: .9; background: radial-gradient(circle at 18% 20%, #fff8c7 0 1px, transparent 2px), radial-gradient(circle at 67% 13%, #fff8c7 0 1px, transparent 2px), radial-gradient(circle at 81% 29%, #fff8c7 0 1px, transparent 2px), radial-gradient(circle at 48% 25%, #fff8c7 0 1px, transparent 2px), radial-gradient(circle at 31% 9%, #fff8c7 0 1px, transparent 2px); }
+    .sun, .moon { position: absolute; top: 28px; right: 9%; width: 58px; height: 58px; border-radius: 50%; opacity: .92; transition: opacity 400ms var(--ease), transform 400ms var(--ease); }
+    .sun { background: #ffe3a0; box-shadow: 0 0 0 12px rgba(255,227,160,.18), 0 0 45px rgba(255,225,151,.58); }
+    .moon { background: #edf0d1; box-shadow: 0 0 0 11px rgba(237,240,209,.12), 0 0 36px rgba(237,240,209,.34); opacity: 0; transform: translateY(10px); }
+    .garden-stage[data-weather="night"] .sun, .garden-stage[data-weather="starry"] .sun { opacity: 0; transform: translateY(-10px); }
+    .garden-stage[data-weather="night"] .moon, .garden-stage[data-weather="starry"] .moon { opacity: .95; transform: translateY(0); }
+    .cloud { position: absolute; top: 58px; left: 16%; width: 122px; height: 30px; border-radius: 30px; background: rgba(255,255,255,.58); filter: blur(.2px); opacity: .75; }
+    .cloud::before, .cloud::after { content: ""; position: absolute; bottom: 0; border-radius: 50%; background: inherit; }
+    .cloud::before { left: 18px; width: 47px; height: 47px; }
+    .cloud::after { right: 18px; width: 39px; height: 39px; }
+    .hill { position: absolute; left: -6%; right: -6%; bottom: 49%; height: 82px; border-radius: 50% 50% 0 0; background: #8bb676; transform: rotate(-2deg); }
+    .hill.back { bottom: 47%; height: 68px; background: #6d9d69; opacity: .64; transform: rotate(3deg); }
+    .path { position: absolute; left: 32%; bottom: -5%; width: 37%; height: 57%; border-radius: 50% 50% 0 0; background: rgba(216,191,137,.7); transform: perspective(250px) rotateX(18deg); }
+    .fence { position: absolute; right: 8%; bottom: 45%; color: rgba(72,94,64,.7); font-size: 35px; letter-spacing: 7px; }
+    .garden-sign { position: absolute; left: 6%; bottom: 43%; padding: 8px 13px; border: 2px solid #b98a5b; border-radius: 8px 7px 10px 6px; color: #704d31; background: #efd19c; box-shadow: 3px 4px 0 rgba(83,63,39,.12); font: 700 12px Georgia, serif; transform: rotate(-3deg); }
+    .mystery-door { position: absolute; right: 3%; bottom: 44%; display: grid; place-items: center; width: 56px; height: 76px; border: 2px solid rgba(55,51,55,.36); border-radius: 28px 28px 5px 5px; color: rgba(244,238,211,.85); background: rgba(52,51,60,.52); box-shadow: 0 0 0 7px rgba(50,48,57,.08); cursor: pointer; opacity: .78; transition: transform 220ms var(--ease), opacity 220ms var(--ease), box-shadow 220ms var(--ease); }
+    .mystery-door:hover { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 0 8px rgba(232,219,164,.15), 0 9px 20px rgba(35,44,44,.18); }
+    .mystery-door small { position: absolute; top: calc(100% + 7px); width: 100px; color: rgba(255,255,255,.76); font-size: 9px; text-align: center; }
+    .garden-orb { position: absolute; top: 17%; right: 31%; width: 7px; height: 7px; border-radius: 50%; background: #fff1b7; box-shadow: 0 0 0 7px rgba(255,241,183,.12), 0 0 14px rgba(255,241,183,.9); opacity: 0; transition: opacity 400ms; }
+    .garden-stage[data-oddity="true"] .garden-orb { opacity: 1; animation: pulse 1.8s ease-in-out infinite; }
+    .plot { position: absolute; z-index: 5; display: grid; place-items: center; width: 118px; height: 78px; border: 0; border-radius: 50%; color: #5c4329; background: radial-gradient(ellipse at 50% 38%, #b7834e, #8b5d38 70%); box-shadow: inset 0 -9px 0 rgba(67,44,25,.15), 0 9px 0 rgba(62,81,46,.1); cursor: pointer; transition: transform 200ms var(--ease), filter 200ms var(--ease); }
+    .plot:hover { transform: translateY(-5px) rotate(-2deg); filter: brightness(1.06); }
+    .plot.empty { border: 2px dashed rgba(104,72,41,.48); color: rgba(91,64,37,.8); background: rgba(181,136,81,.7); font-size: 30px; }
+    .plot[data-plot="0"] { left: 17%; bottom: 17%; }
+    .plot[data-plot="1"] { left: 44%; bottom: 23%; }
+    .plot[data-plot="2"] { left: 67%; bottom: 13%; }
+    .plot[data-plot="3"] { left: 38%; bottom: 7%; }
+    .plant { position: relative; display: grid; place-items: center; width: 82px; height: 90px; transform: translateY(-22px); }
+    .plant .stem { position: absolute; bottom: 0; width: 7px; height: 61px; border-radius: 10px; background: #45815c; transform: rotate(3deg); }
+    .plant .leaf { position: absolute; bottom: 23px; width: 29px; height: 15px; border-radius: 100% 0 100% 0; background: #5e9d63; }
+    .plant .leaf.left { left: 13px; transform: rotate(-20deg); }
+    .plant .leaf.right { right: 13px; transform: scaleX(-1) rotate(-20deg); }
+    .plant .flower { position: absolute; top: 2px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #f4c85f; box-shadow: 0 0 0 7px #f7d978, 0 0 0 13px #f5bd61; font-size: 14px; }
+    .plant.tulip .flower { width: 34px; height: 42px; border-radius: 50% 50% 46% 46%; background: #d77979; box-shadow: 0 0 0 5px #ec9b94; }
+    .plant.grass .flower { top: 12px; width: 28px; height: 28px; border-radius: 50%; background: #96bd61; box-shadow: 0 0 0 5px #a8c878; }
+    .plant.stage-1 { transform: translateY(-9px) scale(.58); filter: saturate(.8); }
+    .plant.stage-2 { transform: translateY(-17px) scale(.82); }
+    .plant.stage-3 { transform: translateY(-22px) scale(1); }
+    .plot-label { position: absolute; bottom: -29px; left: 50%; width: 140px; padding: 4px 7px; border-radius: 999px; color: rgba(255,250,234,.95); background: rgba(59,50,40,.48); font-size: 9px; transform: translateX(-50%); }
+    .water-mark { position: absolute; top: 7px; right: 8px; color: #d9f4ff; font-size: 16px; opacity: 0; }
+    .plot.needs-water .water-mark { opacity: 1; animation: bob 1.2s ease-in-out infinite; }
+    .bee { position: absolute; z-index: 9; top: 30%; left: 47%; display: grid; place-items: center; width: 47px; height: 34px; border-radius: 50%; background: repeating-linear-gradient(90deg, #f4c24e 0 8px, #594532 8px 14px); box-shadow: 0 4px 0 rgba(66,52,33,.16); cursor: pointer; animation: float 3.7s ease-in-out infinite; }
+    .bee::before, .bee::after { content: ""; position: absolute; top: -9px; width: 22px; height: 15px; border-radius: 50%; background: rgba(239,251,255,.74); }
+    .bee::before { left: 0; transform: rotate(-22deg); }
+    .bee::after { right: 0; transform: rotate(22deg); }
+    .bee span { position: relative; z-index: 2; font-size: 13px; }
+    .butterfly { position: absolute; z-index: 8; top: 25%; right: 26%; color: #8d78b9; font-size: 27px; animation: float 5s 1.4s ease-in-out infinite; }
+    .garden-caption { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 5px 2px; color: var(--muted); font-size: 11px; }
+    .garden-caption strong { color: var(--ink); font: 700 15px Georgia, serif; }
+
+    .below-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 17px; margin-top: 18px; }
+    .card { padding: 21px; border: 1px solid rgba(74,101,72,.15); border-radius: var(--radius); background: var(--card); box-shadow: 0 7px 20px rgba(60,72,54,.045); }
+    .card-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+    .card h2 { margin: 0; font: 700 25px/1.05 Georgia, serif; letter-spacing: -.8px; }
+    .card-head p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+    .tag { padding: 5px 8px; border-radius: 999px; color: var(--leaf-dark); background: var(--leaf-soft); font-size: 8px; font-weight: 900; letter-spacing: .7px; text-transform: uppercase; white-space: nowrap; }
+    .plant-list { display: grid; gap: 9px; }
+    .plant-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .plant-row:last-child { border-bottom: 0; }
+    .plant-icon { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 12px; background: var(--leaf-soft); font-size: 19px; }
+    .plant-info { min-width: 0; flex: 1; }
+    .plant-info b, .plant-info span { display: block; }
+    .plant-info b { font-size: 12px; }
+    .plant-info span { color: var(--muted); font-size: 10px; }
+    .mini-progress { width: 80px; height: 7px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }
+    .mini-progress i { display: block; height: 100%; border-radius: inherit; background: var(--leaf); }
+    .tiny-action { padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--leaf-dark); background: transparent; cursor: pointer; font-size: 9px; font-weight: 900; }
+    .tiny-action:disabled { cursor: default; color: #a5aaa2; background: #f1f2ed; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat { padding: 12px 10px; border-radius: 13px; background: #f7f6ee; }
+    .stat b { display: block; font: 700 23px Georgia, serif; }
+    .stat span { display: block; color: var(--muted); font-size: 9px; }
+    .log-list { display: grid; gap: 9px; margin-top: 16px; }
+    .log-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+    .log-item:last-child { border-bottom: 0; }
+    .log-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--honey-soft); font-size: 14px; }
+    .log-item p { margin: 0; font-size: 11px; }
+    .log-item time { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+
+    .bottom-nav { position: fixed; z-index: 25; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: 10px 14px; pointer-events: none; }
+    .bottom-nav-inner { display: grid; grid-template-columns: repeat(4, 1fr); width: min(620px, 100%); padding: 6px; border: 1px solid rgba(74,101,72,.17); border-radius: 18px; background: rgba(255,253,247,.86); box-shadow: 0 10px 28px rgba(47,58,41,.15); backdrop-filter: blur(16px); pointer-events: auto; }
+    .nav-item { display: grid; place-items: center; gap: 2px; padding: 7px 5px; border-radius: 12px; color: var(--muted); background: transparent; cursor: pointer; font-size: 10px; transition: background 160ms var(--ease), color 160ms var(--ease); }
+    .nav-item span { font-size: 18px; line-height: 1; }
+    .nav-item.active { color: var(--leaf-dark); background: var(--leaf-soft); font-weight: 900; }
+
+    .toast-region { position: fixed; z-index: 60; top: 82px; right: 19px; display: grid; gap: 9px; width: min(330px, calc(100% - 38px)); pointer-events: none; }
+    .toast { display: flex; align-items: flex-start; gap: 10px; padding: 12px 13px; border: 1px solid rgba(75,138,102,.2); border-radius: 14px; color: var(--ink); background: rgba(255,253,247,.95); box-shadow: 0 12px 30px rgba(53,63,48,.16); animation: toastIn 380ms var(--ease); pointer-events: auto; }
+    .toast-icon { flex: 0 0 auto; font-size: 18px; }
+    .toast b { display: block; font-size: 11px; }
+    .toast p { margin: 2px 0 0; color: var(--muted); font-size: 10px; }
+    .toast.magic { border-color: rgba(104,91,155,.35); background: #f3f0fb; }
+
+    .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(36,48,36,.42); backdrop-filter: blur(5px); }
+    .modal { width: min(560px, 100%); max-height: min(780px, 90vh); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: #fffdf7; box-shadow: 0 28px 70px rgba(29,38,27,.3); animation: modalIn 260ms var(--ease); }
+    .modal-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+    .modal h2 { margin: 0; font: 700 27px/1.05 Georgia, serif; }
+    .modal-head p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+    .close-button { display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); background: transparent; cursor: pointer; }
+    .seed-grid, .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .seed-card { position: relative; padding: 14px; border: 1px solid var(--line); border-radius: 15px; text-align: left; background: #fffdf8; cursor: pointer; transition: transform 160ms var(--ease), border-color 160ms var(--ease), box-shadow 160ms var(--ease); }
+    .seed-card:hover { border-color: rgba(75,138,102,.55); box-shadow: 0 7px 17px rgba(57,82,53,.09); transform: translateY(-2px); }
+    .seed-card[disabled] { opacity: .46; cursor: not-allowed; }
+    .seed-emoji { display: grid; place-items: center; width: 43px; height: 43px; margin-bottom: 9px; border-radius: 14px; background: var(--leaf-soft); font-size: 25px; }
+    .seed-card b, .seed-card small { display: block; }
+    .seed-card b { font-size: 12px; }
+    .seed-card small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .count-badge { position: absolute; top: 10px; right: 10px; padding: 4px 6px; border-radius: 999px; color: var(--leaf-dark); background: var(--leaf-soft); font-size: 9px; font-weight: 900; }
+    .drawer-section { padding: 13px 0; border-bottom: 1px dashed var(--line); }
+    .drawer-section:last-child { border-bottom: 0; }
+    .drawer-section h3 { margin: 0 0 8px; font: 700 16px Georgia, serif; }
+    .drawer-section p { margin: 0; color: var(--muted); font-size: 11px; }
+    .map-area { position: relative; min-height: 240px; overflow: hidden; padding: 18px; border-radius: 16px; background: linear-gradient(145deg, #d8e8d0, #aac890); }
+    .map-node { position: absolute; display: grid; place-items: center; width: 108px; min-height: 53px; padding: 7px; border: 1px solid rgba(60,92,56,.2); border-radius: 14px; color: var(--leaf-dark); background: rgba(255,253,247,.8); font-size: 10px; font-weight: 900; text-align: center; }
+    .map-node.one { left: 8%; bottom: 24%; }
+    .map-node.two { right: 10%; top: 23%; opacity: .58; filter: grayscale(.35); }
+    .map-node.three { right: 25%; bottom: 10%; opacity: .42; filter: grayscale(.6); }
+    .map-line { position: absolute; height: 2px; background: rgba(75,138,102,.38); transform-origin: left center; }
+    .map-line.one { left: 31%; bottom: 39%; width: 37%; transform: rotate(-31deg); }
+    .map-line.two { left: 40%; bottom: 24%; width: 28%; transform: rotate(21deg); opacity: .55; }
+    .log-full { display: grid; gap: 8px; }
+    .log-full .log-item { padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: #fffdf8; }
+    .audio-panel { display: grid; gap: 12px; }
+    .range-row { display: flex; align-items: center; gap: 10px; }
+    .range-row label { min-width: 88px; color: var(--muted); font-size: 10px; font-weight: 800; }
+    input[type="range"] { width: 100%; accent-color: var(--leaf); }
+    .audio-note { padding: 10px 12px; border-radius: 11px; color: var(--muted); background: var(--leaf-soft); font-size: 10px; }
+
+    .hidden { display: none !important; }
+    @keyframes float { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-11px) rotate(4deg); } }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes pulse { 0%,100% { opacity: .4; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.2); } }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(11px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @media (max-width: 780px) {
+      .topbar { padding: 12px 15px; }
+      .top-actions .pill { display: none; }
+      main { padding-top: 23px; }
+      .hero { grid-template-columns: 1fr; gap: 18px; }
+      .bee-card { max-width: 440px; }
+      .garden-stage { min-height: 440px; }
+      .below-grid { grid-template-columns: 1fr; }
+      .plot { transform: scale(.9); }
+      .plot:hover { transform: scale(.9) translateY(-4px); }
+    }
+    @media (max-width: 510px) {
+      .brand small { display: none; }
+      .brand strong { font-size: 17px; }
+      .status-strip { align-items: flex-start; }
+      .status-strip button { flex: 0 0 auto; }
+      .hero h1 { letter-spacing: -2px; }
+      .garden-stage { min-height: 405px; }
+      .plot { width: 98px; height: 68px; transform: scale(.78); }
+      .plot:hover { transform: scale(.78) translateY(-4px); }
+      .plot[data-plot="0"] { left: 4%; bottom: 16%; }
+      .plot[data-plot="1"] { left: 39%; bottom: 23%; }
+      .plot[data-plot="2"] { left: 62%; bottom: 13%; }
+      .plot[data-plot="3"] { left: 32%; bottom: 7%; }
+      .bee { left: 42%; }
+      .butterfly { right: 18%; }
+      .seed-grid, .inventory-grid { grid-template-columns: 1fr 1fr; }
+      .toolbar { align-items: stretch; }
+      .toolbar-left, .toolbar-right { width: 100%; }
+      .toolbar-right { justify-content: space-between; }
+      .toolbar .primary-button { flex: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Magic Garden">
+        <div class="brand-mark" aria-hidden="true">🌱</div>
+        <div><strong>Magic Garden</strong><small>một khu vườn nhỏ</small></div>
+      </div>
+      <div class="top-actions">
+        <div class="pill" id="day-pill">☀️ <b>Ngày 01</b></div>
+        <div class="pill" id="honey-pill">🍯 <b>0</b> mật ong</div>
+        <button class="icon-button" id="sound-button" type="button" aria-label="Bật âm thanh" title="Bật / tắt âm thanh">🔇</button>
+        <button class="icon-button" id="settings-button" type="button" aria-label="Mở cài đặt" title="Cài đặt âm thanh">⚙</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="status-strip" id="status-strip">
+        <div><strong>Hôm nay khu vườn có gì mới?</strong> <span id="status-copy">Một buổi sáng dịu và một bông hoa đang chờ lớn.</span></div>
+        <button id="save-button" type="button">Đã lưu tự động</button>
+      </div>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Ngày đầu tiên · Vườn số 01</p>
+          <h1 id="page-title">Một nơi nhỏ để<br /><em>mọi thứ lớn dần.</em></h1>
+          <p class="lede">Bạn không cần làm hết mọi việc hôm nay. Chỉ cần tưới một cây, đặt một chiếc ghế, hoặc ngồi lại nhìn nắng đi qua khu vườn.</p>
+        </div>
+        <aside class="bee-card" aria-live="polite">
+          <div class="bee-card-head"><div class="bee-face" aria-hidden="true">🐝</div><div><strong>Ong đang ở đây</strong><small>người bạn của khu vườn</small></div></div>
+          <p id="bee-quote">“Hôm nay đất ẩm vừa đủ. Cây sẽ biết phải làm gì.”</p>
+          <button id="bee-explore-button" type="button">🐝 Cho Ong đi khám phá</button>
+        </aside>
+      </section>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="primary-button" id="plant-button" type="button">🌱 Trồng cây</button>
+          <button class="soft-button" id="weather-button" type="button"><span id="weather-icon">☀️</span><span id="weather-label">Nắng dịu</span></button>
+        </div>
+        <div class="toolbar-right">
+          <button class="ghost-button" id="oddity-button" type="button">✨ Xem điều kỳ lạ</button>
+          <button class="ghost-button" id="reset-button" type="button">↻ Demo lại</button>
+        </div>
+      </div>
+
+      <section class="garden-card" aria-labelledby="garden-title">
+        <h2 id="garden-title" class="sr-only">Khu vườn của tôi</h2>
+        <div class="garden-stage" id="garden-stage" data-weather="sunny" data-oddity="false">
+          <div class="sun" aria-hidden="true"></div>
+          <div class="moon" aria-hidden="true"></div>
+          <div class="cloud" aria-hidden="true"></div>
+          <div class="hill back" aria-hidden="true"></div>
+          <div class="hill" aria-hidden="true"></div>
+          <div class="path" aria-hidden="true"></div>
+          <div class="fence" aria-hidden="true">▮ ▮ ▮</div>
+          <div class="garden-sign">Góc nhỏ của tôi</div>
+          <button class="mystery-door" id="mystery-door" type="button" aria-label="Cánh cửa chưa có tên">🚪<small>chưa có tên</small></button>
+          <div class="garden-orb" aria-hidden="true"></div>
+          <button class="plot" data-plot="0" type="button" aria-label="Ô đất số 1"></button>
+          <button class="plot" data-plot="1" type="button" aria-label="Ô đất số 2"></button>
+          <button class="plot empty" data-plot="2" type="button" aria-label="Ô đất trống số 3">＋</button>
+          <button class="plot empty" data-plot="3" type="button" aria-label="Ô đất trống số 4">＋</button>
+          <button class="bee" id="stage-bee" type="button" aria-label="Nói chuyện với Ong"><span>🐝</span></button>
+          <div class="butterfly" aria-hidden="true">🦋</div>
+        </div>
+        <div class="garden-caption"><div><strong id="garden-caption-title">Khu vườn của tôi</strong><br /><span id="garden-caption-copy">2 cây đang lớn · 2 ô đất còn trống</span></div><span>☁️ <span id="weather-caption">Không khí dịu</span></span></div>
+      </section>
+
+      <section class="below-grid" aria-label="Thông tin khu vườn">
+        <article class="card">
+          <div class="card-head"><div><h2>Cây trong vườn</h2><p>Mỗi cây có một nhịp lớn riêng.</p></div><span class="tag">V1 · Chăm cây</span></div>
+          <div class="plant-list" id="plant-list"></div>
+        </article>
+        <aside class="card">
+          <div class="card-head"><div><h2>Nhật ký hôm nay</h2><p>Những điều bạn đã nhìn thấy.</p></div><span class="tag">local-first</span></div>
+          <div class="stats-grid"><div class="stat"><b id="stat-plants">2</b><span>cây đã gặp</span></div><div class="stat"><b id="stat-creatures">1</b><span>sinh vật</span></div><div class="stat"><b id="stat-days">1</b><span>ngày ghé</span></div></div>
+          <div class="log-list" id="log-list"></div>
+        </aside>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Điều hướng chính">
+      <div class="bottom-nav-inner">
+        <button class="nav-item active" data-panel="garden" type="button"><span>🌱</span>Vườn</button>
+        <button class="nav-item" data-panel="inventory" type="button"><span>🎒</span>Kho đồ</button>
+        <button class="nav-item" data-panel="map" type="button"><span>🗺️</span>Bản đồ</button>
+        <button class="nav-item" data-panel="journal" type="button"><span>📖</span>Nhật ký</button>
+      </div>
+    </nav>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <div id="modal-root"></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "magic-garden-v1-prototype";
+      const WEATHER = {
+        sunny: { icon: "☀️", label: "Nắng dịu", caption: "Không khí dịu", sound: "day" },
+        rain: { icon: "🌧️", label: "Mưa nhẹ", caption: "Đất đang uống nước", sound: "rain" },
+        night: { icon: "🌙", label: "Đêm yên", caption: "Hoa ngủ dưới trăng", sound: "night" },
+        starry: { icon: "✨", label: "Đêm sao", caption: "Có gì đó đang nhìn lên", sound: "starry" }
+      };
+      const SEEDS = {
+        sunflower: { name: "Hướng Dương", icon: "🌻", className: "sunflower", description: "Lớn nhanh · thích ánh sáng", duration: "nhanh" },
+        tulip: { name: "Tulip", icon: "🌷", className: "tulip", description: "Cần chăm đều · nở dịu", duration: "vừa" },
+        grass: { name: "Cỏ", icon: "🍀", className: "grass", description: "Bình thường · đôi khi may mắn", duration: "vừa" }
+      };
+      const DEFAULT_STATE = {
+        version: 1,
+        firstOpened: Date.now(),
+        weather: "sunny",
+        soundEnabled: false,
+        volume: .42,
+        odditySeen: false,
+        beeQuoteIndex: 0,
+        beeExplorations: 0,
+        honey: 4,
+        seeds: { sunflower: 1, tulip: 1, grass: 1 },
+        plots: [
+          { seed: "sunflower", stage: 3, watered: false, createdAt: Date.now() - 86400000 },
+          { seed: "tulip", stage: 2, watered: true, createdAt: Date.now() - 43200000 },
+          { seed: null, stage: 0, watered: false, createdAt: null },
+          { seed: null, stage: 0, watered: false, createdAt: null }
+        ],
+        logs: [
+          { icon: "🌱", title: "Khu vườn được gieo hạt", detail: "Bạn đã đặt những hạt giống đầu tiên.", time: "Hôm nay" },
+          { icon: "🐝", title: "Ong đã xuất hiện", detail: "Nó có vẻ biết đường quanh khu vườn.", time: "Hôm nay" }
+        ]
+      };
+
+      let state = loadState();
+      let audio = null;
+      let selectedPlot = null;
+      let toastTimer = null;
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const clone = (value) => JSON.parse(JSON.stringify(value));
+
+      function loadState() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (!saved) return clone(DEFAULT_STATE);
+          const parsed = JSON.parse(saved);
+          return {
+            ...clone(DEFAULT_STATE),
+            ...parsed,
+            seeds: { ...clone(DEFAULT_STATE).seeds, ...(parsed.seeds || {}) },
+            plots: Array.isArray(parsed.plots) ? parsed.plots : clone(DEFAULT_STATE.plots),
+            logs: Array.isArray(parsed.logs) ? parsed.logs : clone(DEFAULT_STATE.logs)
+          };
+        } catch (error) {
+          return clone(DEFAULT_STATE);
+        }
+      }
+
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (error) { /* demo vẫn hoạt động trong phiên */ }
+      }
+
+      function dayNumber() {
+        return Math.max(1, Math.floor((Date.now() - state.firstOpened) / 86400000) + 1);
+      }
+
+      function addLog(icon, title, detail) {
+        state.logs.unshift({ icon, title, detail, time: "Vừa xong" });
+        state.logs = state.logs.slice(0, 5);
+      }
+
+      function showToast(title, detail, icon = "🌱", tone = "") {
+        const region = $("#toast-region");
+        const toast = document.createElement("div");
+        toast.className = `toast ${tone}`;
+        toast.innerHTML = `<div class="toast-icon">${icon}</div><div><b>${title}</b><p>${detail}</p></div>`;
+        region.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 4200);
+      }
+
+      function render() {
+        const weather = WEATHER[state.weather];
+        $("#day-pill").innerHTML = `${weather.icon} <b>Ngày ${String(dayNumber()).padStart(2, "0")}</b>`;
+        $("#honey-pill").innerHTML = `🍯 <b>${state.honey}</b> mật ong`;
+        $("#weather-icon").textContent = weather.icon;
+        $("#weather-label").textContent = weather.label;
+        $("#weather-caption").textContent = weather.caption;
+        $("#garden-stage").dataset.weather = state.weather;
+        $("#garden-stage").dataset.oddity = String(state.odditySeen);
+        $("#sound-button").textContent = state.soundEnabled ? "🔊" : "🔇";
+        $("#sound-button").classList.toggle("active", state.soundEnabled);
+        $("#status-copy").textContent = statusCopy();
+        $("#stat-plants").textContent = state.plots.filter((plot) => plot.seed).length;
+        $("#stat-creatures").textContent = state.beeExplorations > 0 ? "2" : "1";
+        $("#stat-days").textContent = dayNumber();
+        renderPlots();
+        renderPlantList();
+        renderLogs();
+      }
+
+      function statusCopy() {
+        if (state.odditySeen) return "Một điểm sáng đang nằm ở cuối con đường.";
+        if (state.weather === "rain") return "Mưa đang tưới thay bạn. Hãy lắng nghe một chút.";
+        if (state.weather === "night" || state.weather === "starry") return "Đêm xuống rồi. Có những bông hoa chỉ thức lúc này.";
+        return "Một buổi sáng dịu và một bông hoa đang chờ lớn.";
+      }
+
+      function renderPlots() {
+        $$(".plot").forEach((button) => {
+          const index = Number(button.dataset.plot);
+          const plot = state.plots[index];
+          button.classList.toggle("empty", !plot.seed);
+          button.innerHTML = "";
+          if (!plot.seed) {
+            button.textContent = "+";
+            button.setAttribute("aria-label", `Ô đất trống số ${index + 1}, bấm để trồng`);
+            return;
+          }
+          const seed = SEEDS[plot.seed];
+          const needsWater = !plot.watered && state.weather !== "rain" && plot.stage < 3;
+          button.classList.toggle("needs-water", needsWater);
+          button.setAttribute("aria-label", `${seed.name}, giai đoạn ${plot.stage} trên 3${needsWater ? ", cần tưới" : ""}`);
+          button.innerHTML = `<div class="plant ${seed.className} stage-${plot.stage}"><span class="stem"></span><span class="leaf left"></span><span class="leaf right"></span><span class="flower">${seed.icon}</span></div><span class="water-mark">💧</span><span class="plot-label">${seed.name} · ${plot.stage}/3</span>`;
+        });
+      }
+
+      function renderPlantList() {
+        const list = $("#plant-list");
+        const items = state.plots.map((plot, index) => ({ plot, index })).filter(({ plot }) => plot.seed);
+        if (!items.length) {
+          list.innerHTML = `<div class="log-item"><div class="log-icon">🌱</div><p><b>Vườn còn trống.</b><br />Hãy chọn một hạt giống để bắt đầu.</p></div>`;
+          return;
+        }
+        list.innerHTML = items.map(({ plot, index }) => {
+          const seed = SEEDS[plot.seed];
+          const needsWater = !plot.watered && state.weather !== "rain" && plot.stage < 3;
+          return `<div class="plant-row"><div class="plant-icon">${seed.icon}</div><div class="plant-info"><b>${seed.name}</b><span>${needsWater ? "Đang chờ một ít nước" : plot.stage >= 3 ? "Đã nở đẹp" : "Đang lớn dần"}</span></div><div class="mini-progress" aria-label="Tiến độ ${plot.stage} trên 3"><i style="width:${Math.round(plot.stage / 3 * 100)}%"></i></div><button class="tiny-action water-action" data-plot="${index}" type="button" ${needsWater ? "" : "disabled"}>${needsWater ? "Tưới" : "Đã đủ"}</button></div>`;
+        }).join("");
+      }
+
+      function renderLogs() {
+        $("#log-list").innerHTML = state.logs.slice(0, 3).map((log) => `<div class="log-item"><div class="log-icon">${log.icon}</div><p>${log.title}<time>${log.detail} · ${log.time}</time></p></div>`).join("");
+      }
+
+      function ensureAudio() {
+        if (!audio) audio = new Soundscape();
+        audio.resume();
+        if (state.soundEnabled) audio.start(WEATHER[state.weather].sound);
+      }
+
+      function setWeather(nextWeather) {
+        state.weather = nextWeather;
+        saveState();
+        render();
+        ensureAudio();
+        if (state.soundEnabled) audio.start(WEATHER[state.weather].sound);
+        playSfx(nextWeather === "rain" ? "rain" : "softChime");
+        showToast(WEATHER[nextWeather].label, WEATHER[nextWeather].caption, WEATHER[nextWeather].icon);
+      }
+
+      function cycleWeather() {
+        const sequence = ["sunny", "rain", "night", "starry"];
+        const next = sequence[(sequence.indexOf(state.weather) + 1) % sequence.length];
+        setWeather(next);
+      }
+
+      function openPlantModal() {
+        ensureAudio();
+        selectedPlot = null;
+        const available = state.plots.map((plot, index) => ({ plot, index })).filter(({ plot }) => !plot.seed);
+        if (!available.length) {
+          showToast("Các ô đất đang được chăm sóc", "Hãy đợi một cây lớn thêm hoặc quay lại sau.", "🪴");
+          playSfx("softChime");
+          return;
+        }
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+        modal.id = "plant-modal";
+        modal.innerHTML = `<section class="modal" role="dialog" aria-modal="true" aria-labelledby="plant-modal-title"><div class="modal-head"><div><h2 id="plant-modal-title">Chọn một hạt giống</h2><p>Chọn ô đất sau đó đặt hạt giống xuống.</p></div><button class="close-button" data-close-modal type="button" aria-label="Đóng">×</button></div><div class="seed-grid">${Object.entries(SEEDS).map(([id, seed]) => `<button class="seed-card" data-seed="${id}" type="button"><span class="seed-emoji">${seed.icon}</span><b>${seed.name}</b><small>${seed.description}</small><span class="count-badge">×${state.seeds[id] || 0}</span></button>`).join("")}</div><div class="drawer-section"><h3>Chọn vị trí</h3><p id="plot-hint">Bấm một hạt giống để xem các ô đất còn trống.</p></div><div class="toolbar-right"><button class="ghost-button" data-close-modal type="button">Để sau</button></div></section>`;
+        $("#modal-root").appendChild(modal);
+        $$("[data-seed]", modal).forEach((button) => button.addEventListener("click", () => chooseSeed(button.dataset.seed, modal)));
+        $$("[data-close-modal]", modal).forEach((button) => button.addEventListener("click", closeModal));
+      }
+
+      function chooseSeed(seedId, modal) {
+        if (!(state.seeds[seedId] > 0)) {
+          showToast("Hạt giống đang hết", "Ong có thể tìm thêm một ít cho bạn.", "🌱");
+          playSfx("softChime");
+          return;
+        }
+        const emptyPlots = state.plots.map((plot, index) => ({ plot, index })).filter(({ plot }) => !plot.seed);
+        const choice = emptyPlots[0];
+        state.plots[choice.index] = { seed: seedId, stage: 1, watered: false, createdAt: Date.now() };
+        state.seeds[seedId] -= 1;
+        addLog("🌱", `Đã trồng ${SEEDS[seedId].name}`, `Một ô đất mới bắt đầu lớn lên.`);
+        saveState();
+        render();
+        closeModal();
+        ensureAudio();
+        playSfx("plant");
+        showToast(`${SEEDS[seedId].name} đã được trồng`, "Một việc nhỏ cho hôm nay là đủ rồi.", SEEDS[seedId].icon);
+      }
+
+      function openPlot(index) {
+        ensureAudio();
+        const plot = state.plots[index];
+        if (!plot.seed) {
+          openPlantModal();
+          return;
+        }
+        const seed = SEEDS[plot.seed];
+        const needsWater = !plot.watered && state.weather !== "rain" && plot.stage < 3;
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+        modal.id = "plot-modal";
+        modal.innerHTML = `<section class="modal" role="dialog" aria-modal="true" aria-labelledby="plot-modal-title"><div class="modal-head"><div><h2 id="plot-modal-title">${seed.icon} ${seed.name}</h2><p>Giai đoạn ${plot.stage}/3 · ${needsWater ? "Đất hơi khô" : plot.stage >= 3 ? "Đã nở đẹp" : "Đang lớn dần"}</p></div><button class="close-button" data-close-modal type="button" aria-label="Đóng">×</button></div><div class="drawer-section"><h3>${needsWater ? "Cây đang chờ nước" : "Cây đang kể một câu chuyện"}</h3><p>${needsWater ? "Một ít nước sẽ giúp cây đi thêm một bước." : state.weather === "night" ? "Có những điều chỉ nhìn thấy được dưới ánh trăng." : "Bạn có thể quay lại ngắm cây bất kỳ lúc nào."}</p></div><div class="toolbar-right"><button class="${needsWater ? "primary-button" : "ghost-button"}" id="modal-water" type="button" ${needsWater ? "" : "disabled"}>${needsWater ? "💧 Tưới cây" : "✓ Đã đủ nước"}</button><button class="ghost-button" data-close-modal type="button">Đóng</button></div></section>`;
+        $("#modal-root").appendChild(modal);
+        $$("[data-close-modal]", modal).forEach((button) => button.addEventListener("click", closeModal));
+        $("#modal-water", modal).addEventListener("click", () => { waterPlot(index); closeModal(); });
+      }
+
+      function waterPlot(index) {
+        ensureAudio();
+        const plot = state.plots[index];
+        if (!plot.seed || plot.watered || plot.stage >= 3) return;
+        plot.watered = true;
+        plot.stage = Math.min(3, plot.stage + 1);
+        addLog("💧", `Đã tưới ${SEEDS[plot.seed].name}`, plot.stage >= 3 ? "Cây đã nở thêm một chút." : "Đất đã đủ ẩm cho hôm nay.");
+        saveState();
+        render();
+        playSfx("water");
+        showToast(plot.stage >= 3 ? "Một bông hoa đã nở" : "Đất đã đủ ẩm", plot.stage >= 3 ? "Khu vườn vừa sáng lên một chút." : "Cây sẽ lớn thêm theo nhịp của nó.", plot.stage >= 3 ? "🌸" : "💧");
+      }
+
+      function beeExplore() {
+        ensureAudio();
+        const button = $("#bee-explore-button");
+        if (button.disabled) return;
+        button.disabled = true;
+        button.textContent = "🐝 Ong đang bay...";
+        playSfx("bee");
+        setTimeout(() => {
+          const foundOddity = state.beeExplorations >= 2 && !state.odditySeen;
+          state.beeExplorations += 1;
+          state.honey += foundOddity ? 3 : 2;
+          if ((state.beeExplorations + dayNumber()) % 2 === 0) state.seeds.tulip += 1;
+          if (foundOddity) {
+            state.odditySeen = true;
+            addLog("✨", "Ong mang về một điều lạ", "Ở cuối con đường có một điểm sáng nhỏ.");
+            $("#bee-quote").textContent = "“Tôi không biết thứ này ở đâu ra. Nhưng nó biết đường về.”";
+          } else {
+            addLog("🍯", "Ong đã trở về", "Mang theo một ít mật ong cho khu vườn.");
+          }
+          saveState();
+          render();
+          button.disabled = false;
+          button.textContent = "🐝 Cho Ong đi khám phá";
+          playSfx(foundOddity ? "mystery" : "success");
+          showToast(foundOddity ? "Ong mang về một điều lạ" : "Ong đã trở về", foundOddity ? "Có một điểm sáng nằm ở cuối con đường." : "Bạn nhận được mật ong và một món quà nhỏ.", foundOddity ? "✨" : "🍯", foundOddity ? "magic" : "");
+        }, 2400);
+      }
+
+      function talkToBee() {
+        ensureAudio();
+        const quotes = [
+          "“Bạn không cần làm hết mọi thứ trong một ngày.”",
+          "“Cây này thích được nhìn ngắm đấy.”",
+          "“Tôi đã bay một vòng. Khu vườn vẫn ở đây.”",
+          "“Có những âm thanh chỉ nghe thấy khi mình đứng yên.”",
+          state.odditySeen ? "“Đừng nhìn về phía cánh cửa quá lâu.”" : "“Ở cuối vườn không có gì cả. Ít nhất là hôm qua.”"
+        ];
+        state.beeQuoteIndex = (state.beeQuoteIndex + 1) % quotes.length;
+        $("#bee-quote").textContent = quotes[state.beeQuoteIndex];
+        playSfx(state.odditySeen ? "mystery" : "bee");
+      }
+
+      function showOddity() {
+        ensureAudio();
+        if (!state.odditySeen) {
+          showToast("Khu vườn vẫn đang yên", "Có lẽ Ong sẽ tìm thấy điều gì đó trong một chuyến bay khác.", "✨", "magic");
+          playSfx("mystery");
+          return;
+        }
+        $("#garden-stage").dataset.oddity = "true";
+        showToast("Một điểm sáng ở cuối đường", "Bạn chưa nên đi về phía đó. Chưa phải hôm nay.", "✨", "magic");
+        playSfx("mystery");
+      }
+
+      function openPanel(panel) {
+        ensureAudio();
+        const contents = {
+          inventory: `<div class="modal-head"><div><h2>🎒 Kho đồ nhỏ</h2><p>Những thứ khu vườn đang giữ giúp bạn.</p></div><button class="close-button" data-close-modal type="button">×</button></div><div class="inventory-grid">${Object.entries(SEEDS).map(([id, seed]) => `<div class="seed-card"><span class="seed-emoji">${seed.icon}</span><b>${seed.name}</b><small>Hạt giống có sẵn</small><span class="count-badge">×${state.seeds[id] || 0}</span></div>`).join("")}</div><div class="drawer-section"><h3>🍯 ${state.honey} mật ong</h3><p>Ong mang về sau những chuyến khám phá. Sau này có thể dùng để đổi chậu cây và đèn nấm.</p></div>`,
+          map: `<div class="modal-head"><div><h2>🗺️ Bản đồ khu vườn</h2><p>Đường đi sẽ xuất hiện khi khu vườn sẵn sàng.</p></div><button class="close-button" data-close-modal type="button">×</button></div><div class="map-area"><div class="map-line one"></div><div class="map-line two"></div><div class="map-node one">🌱<br />Mảnh Vườn Số 01</div><div class="map-node two">🌷<br />Vườn Hoa<br /><small>đang lớn lên</small></div><div class="map-node three">🚪<br />chưa có tên</div></div><div class="drawer-section"><p>${state.odditySeen ? "Một chấm sáng vừa xuất hiện ở cuối con đường." : "Có một nơi khác ở phía sau hàng cây. Bạn sẽ thấy khi đến lúc."}</p></div>`,
+          journal: `<div class="modal-head"><div><h2>📖 Nhật ký khu vườn</h2><p>Chỉ ghi lại những điều bạn thật sự đã nhìn thấy.</p></div><button class="close-button" data-close-modal type="button">×</button></div><div class="log-full">${state.logs.map((log) => `<div class="log-item"><div class="log-icon">${log.icon}</div><p><b>${log.title}</b><time>${log.detail} · ${log.time}</time></p></div>`).join("")}</div><div class="drawer-section"><h3>✨ Điều kỳ lạ</h3><p>${state.odditySeen ? "Một điểm sáng ở cuối đường. Ong bảo chưa nên đi về phía đó." : "Có lẽ khu vườn chưa kể hết mọi chuyện."}</p></div>`
+        };
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+        modal.id = "panel-modal";
+        modal.innerHTML = `<section class="modal" role="dialog" aria-modal="true" aria-label="${panel}">${contents[panel]}<div class="toolbar-right"><button class="ghost-button" data-close-modal type="button">Đóng</button></div></section>`;
+        $("#modal-root").appendChild(modal);
+        $$("[data-close-modal]", modal).forEach((button) => button.addEventListener("click", closeModal));
+      }
+
+      function openSettings() {
+        ensureAudio();
+        const modal = document.createElement("div");
+        modal.className = "modal-backdrop";
+        modal.id = "settings-modal";
+        modal.innerHTML = `<section class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="modal-head"><div><h2 id="settings-title">⚙ Âm thanh khu vườn</h2><p>Âm thanh được tạo nhẹ nhàng ngay trong trình duyệt.</p></div><button class="close-button" data-close-modal type="button">×</button></div><div class="audio-panel"><label class="pill"><input id="modal-sound-toggle" type="checkbox" ${state.soundEnabled ? "checked" : ""} /> Bật soundtrack & SFX</label><div class="range-row"><label for="volume-range">Âm lượng</label><input id="volume-range" type="range" min="0" max="1" step=".01" value="${state.volume}" /></div><div class="audio-note">Ngày, mưa, đêm và đêm sao có chất âm riêng. Sự kiện kỳ bí thêm drone và tiếng chuông rất nhẹ, chỉ xuất hiện sau khi bạn tương tác.</div><div class="toolbar-left"><button class="soft-button" id="test-sound" type="button">▶ Nghe thử</button><button class="ghost-button" data-close-modal type="button">Đóng</button></div></div></section>`;
+        $("#modal-root").appendChild(modal);
+        $$("[data-close-modal]", modal).forEach((button) => button.addEventListener("click", closeModal));
+        $("#modal-sound-toggle", modal).addEventListener("change", (event) => toggleSound(event.target.checked));
+        $("#volume-range", modal).addEventListener("input", (event) => { state.volume = Number(event.target.value); saveState(); if (audio) audio.setVolume(state.volume); });
+        $("#test-sound", modal).addEventListener("click", () => { ensureAudio(); playSfx("softChime"); });
+      }
+
+      function toggleSound(enabled) {
+        state.soundEnabled = enabled;
+        saveState();
+        render();
+        ensureAudio();
+        if (enabled) {
+          audio.setVolume(state.volume);
+          audio.start(WEATHER[state.weather].sound);
+          playSfx("softChime");
+          showToast("Âm thanh đã bật", "Khu vườn đang chọn một giai điệu phù hợp.", "🔊");
+        } else {
+          audio.stop();
+          showToast("Âm thanh đã tắt", "Bạn vẫn có thể chăm cây trong im lặng.", "🔇");
+        }
+      }
+
+      function closeModal() { $$(".modal-backdrop").forEach((modal) => modal.remove()); }
+
+      class Soundscape {
+        constructor() {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          this.ctx = new AudioContext();
+          this.master = this.ctx.createGain();
+          this.master.gain.value = state.volume;
+          this.master.connect(this.ctx.destination);
+          this.ambient = null;
+          this.timer = null;
+          this.current = null;
+        }
+        resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); }
+        setVolume(value) { if (this.master) this.master.gain.setTargetAtTime(Number(value), this.ctx.currentTime, .08); }
+        createNoise() {
+          const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+          return buffer;
+        }
+        stop() {
+          if (!this.ctx) return;
+          if (this.timer) { clearInterval(this.timer); this.timer = null; }
+          if (this.ambient) {
+            this.ambient.gain.gain.setTargetAtTime(0, this.ctx.currentTime, .18);
+            const old = this.ambient;
+            setTimeout(() => { try { old.source?.stop(); old.source2?.stop(); old.nodes?.forEach((node) => node.stop?.()); } catch (error) {} }, 700);
+            this.ambient = null;
+          }
+          this.current = null;
+        }
+        start(type) {
+          if (!this.ctx || !state.soundEnabled) return;
+          this.resume();
+          if (this.current === type && this.ambient) return;
+          this.stop();
+          this.current = type;
+          const now = this.ctx.currentTime;
+          const output = this.ctx.createGain();
+          output.gain.value = 0;
+          output.gain.setTargetAtTime(.16, now, .8);
+          output.connect(this.master);
+          const osc = this.ctx.createOscillator();
+          const oscGain = this.ctx.createGain();
+          osc.type = type === "night" || type === "starry" ? "sine" : "triangle";
+          osc.frequency.value = type === "day" ? 196 : type === "rain" ? 146.83 : type === "night" ? 110 : 130.81;
+          oscGain.gain.value = type === "rain" ? .035 : .055;
+          osc.connect(oscGain).connect(output);
+          osc.start();
+          const nodes = [osc];
+          let source = null;
+          if (type === "rain") {
+            source = this.ctx.createBufferSource();
+            source.buffer = this.createNoise();
+            source.loop = true;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.value = 1650;
+            const rainGain = this.ctx.createGain();
+            rainGain.gain.value = .055;
+            source.connect(filter).connect(rainGain).connect(output);
+            source.start();
+            nodes.push(source);
+          } else if (type === "night" || type === "starry") {
+            const second = this.ctx.createOscillator();
+            const secondGain = this.ctx.createGain();
+            second.type = "sine";
+            second.frequency.value = type === "starry" ? 261.63 : 164.81;
+            secondGain.gain.value = .025;
+            second.connect(secondGain).connect(output);
+            second.start();
+            nodes.push(second);
+            this.timer = setInterval(() => this.chime(type === "starry" ? "magic" : "night"), type === "starry" ? 5200 : 7600);
+          }
+          this.ambient = { gain: output, source, nodes };
+        }
+        chime(kind = "soft") {
+          if (!this.ctx || !state.soundEnabled) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+          const frequencies = kind === "magic" ? [523.25, 783.99, 1046.5] : kind === "night" ? [392, 587.33] : [440, 659.25];
+          osc.type = kind === "magic" ? "sine" : "triangle";
+          osc.frequency.setValueAtTime(frequencies[0], now);
+          osc.frequency.exponentialRampToValueAtTime(frequencies[1], now + .3);
+          filter.type = "lowpass";
+          filter.frequency.value = 2200;
+          gain.gain.setValueAtTime(.0001, now);
+          gain.gain.exponentialRampToValueAtTime(kind === "magic" ? .13 : .075, now + .03);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + 1.25);
+          osc.connect(filter).connect(gain).connect(this.master);
+          osc.start(now);
+          osc.stop(now + 1.3);
+        }
+      }
+
+      function playSfx(name) {
+        if (!audio || !state.soundEnabled || !audio.ctx) return;
+        const now = audio.ctx.currentTime;
+        const osc = audio.ctx.createOscillator();
+        const gain = audio.ctx.createGain();
+        const filter = audio.ctx.createBiquadFilter();
+        const config = {
+          plant: { type: "triangle", start: 240, end: 420, length: .24, volume: .1 },
+          water: { type: "sine", start: 660, end: 330, length: .32, volume: .09 },
+          bee: { type: "square", start: 180, end: 240, length: .18, volume: .045 },
+          success: { type: "triangle", start: 392, end: 784, length: .45, volume: .11 },
+          softChime: { type: "sine", start: 440, end: 659, length: .6, volume: .08 },
+          rain: { type: "sine", start: 250, end: 120, length: .3, volume: .045 },
+          mystery: { type: "sine", start: 196, end: 98, length: 1.1, volume: .12 },
+          door: { type: "triangle", start: 130, end: 260, length: 1.3, volume: .15 }
+        }[name] || { type: "sine", start: 330, end: 440, length: .3, volume: .06 };
+        osc.type = config.type;
+        osc.frequency.setValueAtTime(config.start, now);
+        osc.frequency.exponentialRampToValueAtTime(config.end, now + config.length);
+        filter.type = "lowpass";
+        filter.frequency.value = name === "mystery" || name === "door" ? 1100 : 2600;
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(config.volume, now + .025);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + config.length);
+        osc.connect(filter).connect(gain).connect(audio.master);
+        osc.start(now);
+        osc.stop(now + config.length + .05);
+        if (name === "mystery" || name === "door") audio.chime("magic");
+      }
+
+      function bindEvents() {
+        $("#plant-button").addEventListener("click", openPlantModal);
+        $("#weather-button").addEventListener("click", cycleWeather);
+        $("#bee-explore-button").addEventListener("click", beeExplore);
+        $("#stage-bee").addEventListener("click", talkToBee);
+        $("#oddity-button").addEventListener("click", showOddity);
+        $("#mystery-door").addEventListener("click", () => { ensureAudio(); playSfx("door"); showToast("Cánh cửa chưa có tên", state.odditySeen ? "Nó vừa phát ra một tiếng gõ rất nhỏ." : "Bạn chưa nên đi về phía đó.", "🚪", "magic"); });
+        $("#sound-button").addEventListener("click", () => toggleSound(!state.soundEnabled));
+        $("#settings-button").addEventListener("click", openSettings);
+        $("#reset-button").addEventListener("click", () => { localStorage.removeItem(STORAGE_KEY); state = clone(DEFAULT_STATE); render(); showToast("Khu vườn đã trở về ngày đầu", "Bạn có thể gieo lại những hạt giống đầu tiên.", "🌱"); });
+        $("#save-button").addEventListener("click", () => { saveState(); showToast("Đã lưu khu vườn", "Mọi thay đổi đang được giữ trong trình duyệt này.", "💾"); });
+        $$(".plot").forEach((plot) => plot.addEventListener("click", () => openPlot(Number(plot.dataset.plot))));
+        document.addEventListener("click", (event) => {
+          const action = event.target.closest(".water-action");
+          if (action) waterPlot(Number(action.dataset.plot));
+          const nav = event.target.closest(".nav-item");
+          if (nav) {
+            $$(".nav-item").forEach((item) => item.classList.toggle("active", item === nav));
+            if (nav.dataset.panel !== "garden") openPanel(nav.dataset.panel);
+          }
+        });
+        document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeModal(); });
+      }
+
+      bindEvents();
+      render();
+    })();
+  </script>
+</body>
+</html>
