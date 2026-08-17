@@ -355,6 +355,61 @@
       .toolbar-right { justify-content: space-between; }
       .toolbar .primary-button { flex: 1; }
     }
+    /* Typography clarity pass: readable defaults before decorative details. */
+    body { font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif; font-size: 16px; line-height: 1.55; overflow-x: hidden; }
+    button, input { font-family: inherit; }
+    .brand strong, .hero h1, .bee-card strong, .card h2, .modal h2, .drawer-section h3, .plant-info b { font-family: Georgia, "Times New Roman", serif; }
+    .brand strong { font-size: 21px; letter-spacing: -.35px; }
+    .brand small, .bee-card small, .tag, .eyebrow { font-family: inherit; line-height: 1.25; }
+    .brand small { font-size: 10px; }
+    .status-strip { font-size: 12px; line-height: 1.45; }
+    .pill { font-size: 12px; line-height: 1.2; }
+    .lede { font-size: 16px; line-height: 1.6; }
+    .bee-card p { font-size: 14px; line-height: 1.5; }
+    .bee-card button, .soft-button, .primary-button, .ghost-button, .weather-button { font-size: 12px; line-height: 1.25; }
+    .garden-caption { font-size: 12px; line-height: 1.45; }
+    .garden-caption strong { font-size: 16px; }
+    .plot-label { font-size: 10px; line-height: 1.25; }
+    .card-head p, .plant-info span { font-size: 12px; line-height: 1.4; }
+    .plant-info b { font-size: 14px; }
+    .tiny-action { font-size: 11px; line-height: 1.2; }
+    .stat span { font-size: 10px; line-height: 1.25; }
+    .log-item p { font-size: 12px; line-height: 1.4; }
+    .log-item time { font-size: 10px; line-height: 1.35; }
+    .nav-item { font-size: 11px; line-height: 1.25; }
+    .toast b { font-size: 12px; }
+    .toast p, .drawer-section p, .seed-card small, .map-node, .audio-note { font-size: 11px; line-height: 1.45; }
+    .modal-head p { font-size: 12px; line-height: 1.45; }
+    .seed-card b { font-size: 14px; }
+    .seed-card small { margin-top: 5px; }
+    .count-badge { font-size: 10px; }
+    .hero h1 { text-wrap: balance; }
+    .card, .modal, .bee-card, .status-strip { overflow-wrap: anywhere; }
+    @media (max-width: 780px) {
+      .hero h1 { font-size: clamp(36px, 10vw, 54px); }
+      .lede { max-width: 62ch; }
+      .status-strip { align-items: flex-start; }
+      .status-strip > div { min-width: 0; }
+    }
+    @media (max-width: 510px) {
+      .topbar { gap: 10px; }
+      .brand strong { font-size: 18px; }
+      .top-actions { gap: 4px; }
+      .top-actions .icon-button { width: 33px; height: 33px; }
+      .status-strip { font-size: 11px; }
+      .hero h1 { letter-spacing: -1.5px; }
+      .lede { font-size: 15px; }
+      .toolbar-left, .toolbar-right { gap: 6px; }
+      .toolbar .soft-button, .toolbar .primary-button, .toolbar .ghost-button { min-height: 40px; padding-inline: 10px; }
+      .card { padding: 17px; }
+      .card h2 { font-size: 23px; }
+      .plant-row { gap: 8px; }
+      .plant-info { min-width: 0; }
+      .plant-info b, .plant-info span { overflow-wrap: anywhere; }
+      .mini-progress { width: 56px; flex: 0 0 56px; }
+      .tiny-action { flex: 0 0 auto; padding-inline: 7px; }
+      .modal { padding: 18px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
     }
