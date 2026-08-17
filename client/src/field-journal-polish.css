@@ -179,6 +179,70 @@
 .garden-marginalia span { color: #d9982c; font-size: 14px; }
 .garden-marginalia em { font-style: normal; font-weight: 800; }
 
+.garden-field-note {
+  position: absolute;
+  z-index: 3;
+  left: 18px;
+  bottom: 104px;
+  display: grid;
+  gap: 1px;
+  color: rgba(40, 72, 48, .84);
+  padding: 5px 8px 4px 22px;
+  border-left: 1px solid rgba(49, 83, 66, .48);
+  background: linear-gradient(90deg, rgba(255, 248, 225, .7), rgba(255, 248, 225, .08));
+  font: 700 8px/1.18 "Fraunces", serif;
+  letter-spacing: .04em;
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+.garden-field-note span {
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  color: #d9982c;
+  font-size: 17px;
+}
+
+.garden-field-note em { font-style: normal; }
+.garden-field-note small { font: 700 6px/1.2 "DM Sans", sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .64; }
+
+.pressed-sprig {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  bottom: 25px;
+  width: 72px;
+  height: 38px;
+  border-bottom: 1px solid rgba(49, 83, 66, .35);
+  transform: rotate(-19deg);
+  opacity: .7;
+  pointer-events: none;
+}
+
+.pressed-sprig::before {
+  content: "";
+  position: absolute;
+  left: 29px;
+  bottom: -2px;
+  height: 33px;
+  border-left: 1px solid rgba(49, 83, 66, .6);
+  transform: rotate(17deg);
+}
+
+.pressed-sprig i {
+  position: absolute;
+  width: 14px;
+  height: 7px;
+  border: 1px solid rgba(49, 83, 66, .52);
+  border-radius: 100% 0 100% 0;
+  background: rgba(214, 217, 151, .14);
+}
+
+.pressed-sprig i:nth-child(1) { left: 20px; top: 4px; transform: rotate(18deg); }
+.pressed-sprig i:nth-child(2) { left: 38px; top: 15px; transform: rotate(-24deg) scaleX(-1); }
+.pressed-sprig i:nth-child(3) { left: 48px; top: 3px; transform: rotate(8deg); }
+
 .bee-flight-trace {
   position: absolute;
   z-index: 2;
@@ -257,6 +321,25 @@
   mix-blend-mode: screen;
 }
 
+.door-card::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: -10px -8px -12px -14px;
+  background:
+    radial-gradient(ellipse at 8% 76%, rgba(217, 152, 44, .24) 0 2px, transparent 3px) 0 0 / 19px 17px,
+    radial-gradient(ellipse at 100% 10%, rgba(244, 214, 126, .13), transparent 38%),
+    linear-gradient(138deg, rgba(246, 242, 232, .3), transparent 22%, transparent 78%, rgba(20, 45, 45, .45));
+  clip-path: polygon(0 6%, 94% 0, 100% 92%, 13% 100%);
+  filter: blur(.2px);
+  opacity: .9;
+  pointer-events: none;
+}
+
+.door-card {
+  box-shadow: -8px 12px 0 rgba(48, 72, 58, .10), 0 19px 28px rgba(20, 45, 40, .18), inset 0 0 0 1px rgba(255, 245, 210, .08);
+}
+
 .door-card-top,
 .door-card-bottom,
 .ink-door-drawing { position: relative; z-index: 2; }
@@ -276,9 +359,74 @@
   opacity: .45;
 }
 
+.top-nav .nav-item {
+  position: relative;
+  overflow: visible;
+  border-radius: 1px 8px 2px 10px;
+  border-bottom: 1px dashed rgba(49, 83, 66, .22);
+  box-shadow: 1px 2px 0 rgba(81, 76, 49, .05);
+}
+
+.top-nav .nav-item::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -5px;
+  left: 50%;
+  width: 15px;
+  height: 7px;
+  background: rgba(226, 192, 109, .38);
+  border-left: 1px solid rgba(155, 112, 36, .16);
+  border-right: 1px solid rgba(155, 112, 36, .16);
+  transform: translateX(-50%) rotate(-4deg);
+}
+
+.top-nav .nav-item.active::after {
+  content: "✦";
+  position: absolute;
+  right: -4px;
+  bottom: -7px;
+  color: #d9982c;
+  font: 800 13px/1 "Fraunces", serif;
+}
+
+.top-actions .environment-chip,
+.top-actions .sound-button {
+  position: relative;
+  background-image: linear-gradient(180deg, rgba(255, 252, 235, .98), rgba(241, 231, 199, .86));
+  border: 1px solid rgba(87, 108, 74, .22);
+}
+
+.top-actions .sound-button::after {
+  content: "⌁";
+  position: absolute;
+  right: -5px;
+  top: -7px;
+  color: #d9982c;
+  font: 800 12px/1 "Fraunces", serif;
+}
+
+.inventory-slot {
+  border-radius: 1px 8px 2px 9px !important;
+  clip-path: polygon(2% 0, 98% 3%, 100% 87%, 94% 100%, 2% 97%, 0 7%);
+  background-image: linear-gradient(130deg, rgba(255, 250, 225, .9), rgba(232, 225, 193, .72)) !important;
+  box-shadow: inset 0 0 0 1px rgba(75, 102, 64, .13), 2px 2px 0 rgba(49, 83, 66, .06);
+}
+
+.inventory-slot:not(.empty)::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 10px;
+  border-top: 1px dashed rgba(49, 83, 66, .32);
+}
+
 @media (max-width: 720px) {
   .garden-marginalia { top: 14px; right: 12px; max-width: 142px; font-size: 7px; }
   .bee-flight-trace { left: 9%; top: 26%; transform: scale(.72) rotate(-18deg); transform-origin: left top; }
+  .garden-field-note { left: 11px; bottom: 92px; transform: scale(.84) rotate(-3deg); transform-origin: left bottom; }
+  .pressed-sprig { right: 4px; bottom: 20px; transform: scale(.72) rotate(-19deg); transform-origin: right bottom; }
   .plot { height: 76px; }
 }
 

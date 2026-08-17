@@ -83,3 +83,6 @@ Logo là **một giọt mật nhỏ chứa đường bay hình xoắn của Ong*
 - Fraunces mang tiếng nói truyện kể cho tên cây, nhãn ký ức, lời Ong và các ghi chú; DM Sans chỉ phục vụ dữ liệu và thao tác thực dụng.
 - Dấu sáp mật, đường bay nét đứt của Ong và giọt mật phải lặp lại có chủ đích ở tiến trình, phần thưởng và ghi chú cần chú ý để tạo một nhịp nhận diện riêng.
 - Sân vườn vận hành như **trang mẫu vật sống**: có đường kẻ thực địa, chú thích lề, nhãn ép hoa và dấu băng giấy; thao tác chỉ được đặt lên trên lớp ghi chép này, không tách thành bảng điều khiển độc lập.
+- Điều khiển thực dụng phải mượn hình thái **tab sổ tay, tem sáp, nhãn hạt giống, kẹp giấy hoặc băng giấy**; không dùng pill trung tính kiểu ứng dụng SaaS.
+- Hình khu vườn luôn có lớp **mũi tên mực, đường bay Ong, chú thích thực địa, vết ép lá hoặc khung giấy mòn** để giữ cảm giác trang mẫu vật sống.
+- Mặt bí ẩn được nối vào hệ giấy ivory bằng **mực đêm thấm viền, bụi phấn hổ phách và gờ thực vật**, không đứng tách rời như mô-đun dark mode.

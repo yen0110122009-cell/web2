@@ -29,17 +29,21 @@ import MemoryAtlas from "@/components/MemoryAtlas";
 import MutationGallery from "@/components/MutationGallery";
 import ProgressArchive from "@/components/ProgressArchive";
 import { GardenDecorations, MemoryRewards } from "@/components/MemoryRewards";
-import { NarrationCaption, type ActiveCaption } from "@/components/NarrationCaption";
+import { CaptionSettingsPanel, NarrationCaption, type ActiveCaption } from "@/components/NarrationCaption";
 import {
   createMemoryProgress,
+  DEFAULT_GRID_SETTINGS,
+  DEFAULT_SUBTITLE_SETTINGS,
   loadGardenProgress,
   mergeMemoryProgress,
   saveGardenProgress,
   type DecorationPlacement,
+  type GridSettings,
   type GardenPlot,
   type GardenProgressSnapshot,
   type MemoryProgress,
   type RegionKey,
+  type SubtitleSettings,
   type TimeOfDay,
   type Weather,
 } from "@/lib/garden-progress";
@@ -125,6 +129,8 @@ export default function Home() {
   const [butterflySeen, setButterflySeen] = useState(() => initialProgress.butterflySeen ?? false);
   const [memoryProgress, setMemoryProgress] = useState<MemoryProgress>(() => initialProgress.memory ? mergeMemoryProgress(initialProgress.memory) : createMemoryProgress());
   const [decorations, setDecorations] = useState<DecorationPlacement[]>(() => initialProgress.decorations ?? []);
+  const [grid, setGrid] = useState<GridSettings>(() => initialProgress.grid ?? DEFAULT_GRID_SETTINGS);
+  const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>(() => initialProgress.subtitles ?? DEFAULT_SUBTITLE_SETTINGS);
   const [doorPanelOpen, setDoorPanelOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const [caption, setCaption] = useState<ActiveCaption | null>(null);
@@ -145,7 +151,7 @@ export default function Home() {
     [fragmentCount, honey, seeds],
   );
   const gardenProgress = useMemo<GardenProgressSnapshot>(() => ({
-    version: 4,
+    version: 5,
     updatedAt: new Date().toISOString(),
     time,
     weather,
@@ -158,7 +164,9 @@ export default function Home() {
     butterflySeen,
     memory: memoryProgress,
     decorations,
-  }), [beeBond, butterflySeen, decorations, honey, memoryProgress, plots, seeds, selectedPlot, time, water, weather]);
+    grid,
+    subtitles: subtitleSettings,
+  }), [beeBond, butterflySeen, decorations, grid, honey, memoryProgress, plots, seeds, selectedPlot, subtitleSettings, time, water, weather]);
 
   function updateAudioScene() {
     const nodes = audioRef.current;
@@ -405,6 +413,8 @@ export default function Home() {
     setButterflySeen(snapshot.butterflySeen);
     setMemoryProgress(mergeMemoryProgress(snapshot.memory));
     setDecorations(snapshot.decorations);
+    setGrid(snapshot.grid);
+    setSubtitleSettings(snapshot.subtitles);
   }
 
   return (
@@ -467,6 +477,7 @@ export default function Home() {
             <div className="audio-head"><div><AudioLines size={17} /> Nhịp thở khu vườn</div><span className={soundOn ? "status-dot live" : "status-dot"}>{soundOn ? "ĐANG PHÁT" : "TẮT"}</span></div>
             <p>{environment}</p>
             <button className="text-action" onClick={toggleSound}>{soundOn ? "Để khu vườn nghỉ" : "Đánh thức giai điệu"}<ChevronRight size={14} /></button>
+            <CaptionSettingsPanel settings={subtitleSettings} onChange={setSubtitleSettings} />
           </section>
         </aside>
 
@@ -485,8 +496,10 @@ export default function Home() {
                 <div className="garden-stamp">{environment}</div>
                 <div className="garden-marginalia" aria-hidden="true"><span>✦</span><em>Mẫu vật sống · ghi sau cơn mưa</em></div>
                 <div className="bee-flight-trace" aria-hidden="true"><i /><i /><i /></div>
-                <GardenDecorations progress={memoryProgress} placements={decorations} onPlacementChange={setDecorations} />
-                <NarrationCaption caption={caption} onDismiss={() => { narrationRef.current?.pause(); setCaption(null); }} />
+                <div className="garden-field-note" aria-hidden="true"><span>↳</span><em>vệt phấn: 01</em><small>đất còn ấm</small></div>
+                <div className="pressed-sprig" aria-hidden="true"><i /><i /><i /></div>
+                <GardenDecorations progress={memoryProgress} placements={decorations} grid={grid} onPlacementChange={setDecorations} onGridChange={setGrid} />
+                <NarrationCaption caption={caption} settings={subtitleSettings} onDismiss={() => { narrationRef.current?.pause(); setCaption(null); }} />
                 <button className="creature butterfly" onClick={followButterfly} aria-label="Theo Bướm xanh"><span className="butterfly-mark">✧</span><span>Theo Bướm</span></button>
                 <button className="creature bee" onClick={talkToBee} aria-label="Nói chuyện với Ong"><Bug size={22} /><span>Hỏi Ong</span></button>
                 <button className="door-hotspot" onClick={inspectDoor} aria-label="Kiểm tra cánh cửa bí ẩn"><LockKeyhole size={18} /><span>Cánh cửa</span></button>
@@ -503,8 +516,8 @@ export default function Home() {
               <div className="garden-toolbar">
                 <div className="selection-note"><span className={`state-mark ${selected.state}`} /> <div><strong>{selected.name}</strong><p>{selected.note}</p></div></div>
                 <div className="tool-actions">
-                  <Button variant="outline" className="tool-button" onClick={plantSeed}><Flower2 size={17} /> Đặt một hạt <b>{seeds}</b></Button>
-                  <Button className="honey-button" onClick={waterPlant}><Droplets size={17} /> Tưới cây <b>{water}</b></Button>
+                  <Button variant="outline" className="tool-button" onClick={plantSeed}><Flower2 size={17} /> Gieo một hạt <b>{seeds}</b></Button>
+                  <Button className="honey-button" onClick={waterPlant}><Droplets size={17} /> Tưới một lượt <b>{water}</b></Button>
                 </div>
               </div>
             </div>

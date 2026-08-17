@@ -18,4 +18,11 @@
 - [x] Viết dữ liệu phụ đề theo thời gian cho lời dẫn của Ong và từng khu vực ký ức.
 - [x] Xây dựng bề mặt kéo thả có phản hồi trực quan, kho vật trang trí và hộp phụ đề đồng bộ.
 - [x] Kiểm thử chuột, cảm ứng, tải lại trang, sao lưu–khôi phục và responsive.
+- [x] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
+- [x] Xác định mô hình xoay, tỷ lệ, lưới căn chỉnh và bộ tùy chọn phụ đề tương thích với tiến trình cũ.
+- [x] Nâng schema sao lưu JSON để ghi lại biến đổi hiện vật, trạng thái lưới và cài đặt phụ đề.
+- [x] Xây dựng điều khiển xoay–co giãn có thể dùng bằng chuột, cảm ứng và bàn phím.
+- [x] Tạo lưới căn chỉnh bật/tắt và phản hồi “bám lưới” trên bề mặt khu vườn.
+- [x] Tạo bảng cài đặt nhỏ cho cỡ chữ, màu giấy và màu mực phụ đề.
+- [x] Kiểm thử lưu–khôi phục, tương tác đa thiết bị, khả năng truy cập và build production.
 - [ ] Lưu checkpoint và đồng bộ bản mở rộng lên GitHub.
