@@ -61,3 +61,6 @@
 - [x] Chẩn đoán lỗi nạp font chữ và lời dẫn âm thanh trên GitHub Pages.
 - [x] Sửa đường dẫn, fallback và cơ chế phát âm thanh tương thích với Pages.
 - [x] Kiểm tra công khai, đồng bộ GitHub và lưu checkpoint cho bản sửa.
+- [x] Xác định các lớp chữ có nền trong suốt hoặc thiếu tương phản trên desktop và điện thoại.
+- [x] Gia cố vật liệu nền giấy/mực, viền và bóng chữ cho các nhãn, thông báo và bảng nổi.
+- [ ] Kiểm tra công khai ở ngày/đêm, đồng bộ GitHub và lưu checkpoint.
