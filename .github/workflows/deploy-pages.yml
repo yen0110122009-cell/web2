@@ -29,9 +29,7 @@ jobs:
       - name: Cài phụ thuộc
         run: pnpm install --frozen-lockfile
       - name: Biên dịch website cho Pages
-        env:
-          VITE_PUBLIC_BASE: /web2/
-        run: pnpm build
+        run: pnpm build:pages
       - name: Đóng gói trang tĩnh
         uses: actions/upload-pages-artifact@v3
         with:
